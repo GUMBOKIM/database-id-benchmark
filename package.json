@@ -1,0 +1,26 @@
+{
+  "name": "database-id-benchmark",
+  "version": "1.0.0",
+  "description": "Auto-generated primary key IDs (UUID v1-v7, ULID, CUID, Snowflake, ...) benchmarked across PostgreSQL, MySQL, MariaDB, Oracle, SQL Server and SQLite",
+  "scripts": {
+    "bench": "./bench.sh",
+    "report": "node src/report.js"
+  },
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@paralleldrive/cuid2": "^3.3.0",
+    "bson": "^7.3.3",
+    "cuid": "^3.0.0",
+    "ksuid": "^3.0.0",
+    "mssql": "^12.7.2",
+    "mysql2": "^3.24.4",
+    "nanoid": "^6.0.1",
+    "oracledb": "^7.0.1",
+    "pg": "^8.23.0",
+    "typeid-js": "^1.2.0",
+    "ulid": "^3.0.2",
+    "uuid": "^14.0.2",
+    "xid-js": "^1.0.1"
+  }
+}

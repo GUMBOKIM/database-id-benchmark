@@ -1,0 +1,116 @@
+# Every database gets the same CPU / memory budget and the same cache size (CACHE_MB),
+# so large tables no longer fit in memory and index locality starts to matter.
+# bench.sh starts ONE database at a time: databases running side by side compete for
+# the CPU's shared cache and memory bandwidth, which skews results a lot.
+#
+# Images are pinned by digest so a rerun gets exactly the same builds.
+x-db: &db
+  cpus: 2 # Oracle Database Free caps itself at 2 CPU threads; everyone gets the same
+  mem_limit: 2g
+  profiles: [db] # never started by a bare `docker compose up`
+
+services:
+  postgres:
+    <<: *db
+    image: postgres:18.6-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    environment:
+      POSTGRES_PASSWORD: bench
+      POSTGRES_DB: bench
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${CACHE_MB:-256}MB
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - max_wal_size=4GB
+    healthcheck:
+      test: [CMD, pg_isready, -U, postgres]
+      interval: 1s
+      retries: 120
+
+  mysql:
+    <<: *db
+    image: mysql:8.4.11@sha256:85b9bf2e29cf836ecb8c2a15a935d4ba0c606631dff1dd79531a11983c638f2a
+    environment:
+      MYSQL_ROOT_PASSWORD: bench
+      MYSQL_DATABASE: bench
+    command:
+      - --innodb-buffer-pool-size=${CACHE_MB:-256}M
+      - --innodb-redo-log-capacity=2G
+    healthcheck:
+      test: [CMD, mysqladmin, ping, -h, 127.0.0.1, -pbench]
+      interval: 1s
+      retries: 180
+
+  mariadb:
+    <<: *db
+    image: mariadb:11.8.9@sha256:79d59758afc91b89b120b0a8904d637f5a3b3e1c4900f29b740d6d46c72fef68
+    environment:
+      MARIADB_ROOT_PASSWORD: bench
+      MARIADB_DATABASE: bench
+    command:
+      - --innodb-buffer-pool-size=${CACHE_MB:-256}M
+      - --innodb-log-file-size=2G
+      - --performance-schema=ON
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 1s
+      retries: 180
+
+  oracle:
+    <<: *db
+    image: gvenzl/oracle-free:23.26.3-slim@sha256:6d61d267a3b978c24c5ac1790e62e927416a0aec446bd86e4b3a1527562757bd
+    environment:
+      ORACLE_PASSWORD: bench
+      APP_USER: bench
+      APP_USER_PASSWORD: bench
+      CACHE_MB: ${CACHE_MB:-256}
+    volumes:
+      # Shrinks the SGA / buffer cache to CACHE_MB on first start (see the script).
+      - ./docker/oracle-init:/container-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD, healthcheck.sh]
+      interval: 2s
+      retries: 300
+
+  mssql:
+    <<: *db
+    # No arm64 build exists: on Apple Silicon this runs under Rosetta emulation.
+    image: mcr.microsoft.com/mssql/server:2022-latest@sha256:4402d880dd4c34bfa7d8705e56a86cd6c88da80a1f6bbbe741f999e76264a090
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: 'Y'
+      MSSQL_SA_PASSWORD: Bench_12345
+    healthcheck:
+      test: [CMD-SHELL, /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Bench_12345 -C -Q 'select 1' -b -o /dev/null]
+      interval: 2s
+      retries: 180
+
+  # Runs gen.js / bench.js / report.js. Also the SQLite engine itself (in-process),
+  # so it gets the same CPU / memory budget as the database containers.
+  runner:
+    image: node:24-slim@sha256:0e0ff40c39bc087845bfb27465a0df4ea419520094bc35842ff83dd8cbe6f9b6
+    cpus: 2
+    mem_limit: 2g
+    profiles: [runner]
+    working_dir: /app
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules # Linux install, separate from the host's
+      - sqlite-data:/data # SQLite files on the VM disk, not a host bind mount
+    environment:
+      - RUN_ID
+      - SIZES
+      - TYPES
+      - BIG_N
+      - BIG_TYPES
+      - BATCH
+      - LOOKUPS
+      - CACHE_MB
+      - CONC_WORKERS
+      - CONC_ROWS
+
+volumes:
+  node_modules:
+  sqlite-data:
