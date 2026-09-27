@@ -53,6 +53,9 @@ select { font: inherit; padding: 4px 8px; border: 1px solid var(--border); borde
 .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .legend svg { flex: none; }
+.legend span { cursor: default; }
+svg.chart .line { transition: opacity 0.12s; }
+svg.chart.focus .line:not(.on) { opacity: 0.12; }
 svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
 svg.chart text { fill: var(--text-muted); font-size: 11px; }
 .tip { position: absolute; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; font-size: 12px; box-shadow: 0 4px 16px rgb(0 0 0 / 0.12); display: none; z-index: 2; min-width: 170px; }
@@ -73,6 +76,7 @@ th:first-child, td:first-child { text-align: left; }
 	<h1>ID 벤치마크 결과</h1>
 	<p class="sub" id="sub"></p>
 	<div class="filters"><label>DB <select id="db"></select></label><span class="env" id="env"></span></div>
+	<div id="gen"></div>
 	<div id="charts"></div>
 </main>
 <script>
@@ -121,9 +125,9 @@ function niceLinTicks(lo, hi) {
 	return out;
 }
 
-function chart(card, metric, series, panel) {
+function chart(card, metric, raw, panel) {
 	const W = 560, H = 250, L = 52, R = 12, T = 8, B = 30;
-	const all = series.flatMap((s) => s.pts);
+	const all = raw.flatMap((s) => s.pts);
 	if (!all.length) { card.append(el('p', { class: 'env' }, '데이터 없음')); return; }
 	const xs = [...new Set(all.map((p) => p.n))].sort((a, b) => a - b);
 	const x0 = Math.log10(xs[0]), x1 = Math.log10(xs.at(-1));
@@ -140,6 +144,14 @@ function chart(card, metric, series, panel) {
 		Y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
 		ticks = niceLinTicks(lo, hi);
 	}
+	const series = mergeSame(raw, Y);
+	const legend = el('div', { class: 'legend' });
+	for (const s of series) {
+		const key = svgEl('svg', { width: 16, height: 4 });
+		key.append(svgEl('line', { x1: 0, x2: 16, y1: 2, y2: 2, stroke: s.color, 'stroke-width': 2, ...(s.ref ? { 'stroke-dasharray': '4 2' } : {}) }));
+		const item = el('span', { 'data-key': s.key }); item.append(key, document.createTextNode(s.label)); legend.append(item);
+	}
+	card.append(legend);
 	const svg = svgEl('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': `${metric.title}, ${panel.title}` });
 	for (const t of ticks) {
 		svg.append(svgEl('line', { x1: L, x2: W - R, y1: Y(t), y2: Y(t), stroke: 'var(--grid)', 'stroke-width': 1 }));
@@ -158,6 +170,7 @@ function chart(card, metric, series, panel) {
 			svg.append(svgEl('polygon', { points: band.join(' '), fill: s.color, opacity: 0.12 }));
 		}
 		svg.append(svgEl('polyline', {
+			class: 'line', 'data-key': s.key,
 			points: s.pts.map((p) => `${X(p.n)},${Y(p.med)}`).join(' '), fill: 'none', stroke: s.color,
 			'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', ...(s.ref ? { 'stroke-dasharray': '5 4' } : {}),
 		}));
@@ -170,6 +183,14 @@ function chart(card, metric, series, panel) {
 	const hit = svgEl('rect', { x: L, y: T, width: W - L - R, height: H - T - B, fill: 'transparent', tabindex: 0 });
 	svg.append(hit);
 	card.append(svg);
+	// Legend hover: bring one line forward, fade the rest.
+	for (const item of card.querySelectorAll('.legend span')) {
+		item.addEventListener('pointerenter', () => {
+			svg.classList.add('focus');
+			for (const l of svg.querySelectorAll('.line')) l.classList.toggle('on', l.dataset.key === item.dataset.key);
+		});
+		item.addEventListener('pointerleave', () => svg.classList.remove('focus'));
+	}
 	const tip = el('div', { class: 'tip' });
 	card.append(tip);
 	let idx = xs.length - 1;
@@ -182,9 +203,10 @@ function chart(card, metric, series, panel) {
 		const head = el('div', { class: 'h' }, `N = ${n.toLocaleString()}`);
 		if (size) head.textContent += ` · autoinc 테이블+인덱스 ${(size.med * n / 2 ** 20).toFixed(0)} MiB`;
 		tip.append(head);
-		const rows = series.map((s) => ({ s, p: s.pts.find((p) => p.n === n) })).filter((r) => r.p).sort((a, b) => b.p.med - a.p.med);
+		for (const s of series) { const p = s.pts.find((q) => q.n === n); if (p) dots.append(svgEl('circle', { cx: X(n), cy: Y(p.med), r: 4, fill: s.color, stroke: 'var(--surface-1)', 'stroke-width': 2 })); }
+		const rows = series.flatMap((g) => g.members.map((s) => ({ s: { ...s, color: g.color, ref: g.ref }, p: s.pts.find((p) => p.n === n) })))
+			.filter((r) => r.p).sort((a, b) => b.p.med - a.p.med);
 		for (const { s, p } of rows) {
-			dots.append(svgEl('circle', { cx: X(n), cy: Y(p.med), r: 4, fill: s.color, stroke: 'var(--surface-1)', 'stroke-width': 2 }));
 			const r = el('div', { class: 'r' });
 			const key = svgEl('svg', { width: 14, height: 4 });
 			key.append(svgEl('line', { x1: 0, x2: 14, y1: 2, y2: 2, stroke: s.color, 'stroke-width': 2, ...(s.ref ? { 'stroke-dasharray': '4 2' } : {}) }));
@@ -212,6 +234,33 @@ function chart(card, metric, series, panel) {
 		if (e.key === 'ArrowLeft') { idx = Math.max(0, idx - 1); show(); e.preventDefault(); }
 		if (e.key === 'ArrowRight') { idx = Math.min(xs.length - 1, idx + 1); show(); e.preventDefault(); }
 	});
+}
+
+// IDs whose lines lie on top of each other would hide one another: draw them once and
+// name them together. "=" when the values match (e.g. UUID v6 and v7 have the same size),
+// "≈" when they only coincide on screen (90% of points within 2px, none further than 12px).
+// The tooltip still lists each ID's own value.
+function mergeSame(series, Y) {
+	const aligned = (a, b) => a.pts.length === b.pts.length && a.pts.every((p, i) => p.n === b.pts[i].n);
+	const equal = (a, b) => aligned(a, b) && a.pts.every((p, i) => {
+		const q = b.pts[i].med;
+		return Math.abs(p.med - q) <= 0.005 * Math.max(Math.abs(p.med), Math.abs(q), 1e-9);
+	});
+	const onScreen = (a, b) => {
+		if (!aligned(a, b)) return false;
+		const d = a.pts.map((p, i) => Math.abs(Y(p.med) - Y(b.pts[i].med)));
+		return d.filter((x) => x <= 2).length >= 0.9 * d.length && Math.max(...d) <= 12;
+	};
+	const out = [];
+	for (const s of series) {
+		const g = out.find((o) => onScreen(o.members[0], s));
+		if (g) {
+			g.label += equal(g.members[0], s) ? ` = ${s.label}` : ` ≈ ${s.label}`;
+			g.key += `,${s.id}`;
+			g.members.push(s);
+		} else out.push({ ...s, key: s.id, members: [s] });
+	}
+	return out;
 }
 
 function table(metric, byType) {
@@ -246,24 +295,33 @@ function render() {
 		for (const panel of PANELS) {
 			const ids = panel.ids.filter((id) => byType[id]);
 			if (!ids.length) continue;
-			const series = ids.map((id) => ({ id, label: D.types[id].label, color: color(panel, id), pts: byType[id] }));
-			if (byType[REF]) series.unshift({ id: REF, label: `${D.types[REF].label} (기준)`, color: 'var(--ref)', pts: byType[REF], ref: true });
+			const raw = ids.map((id) => ({ id, label: D.types[id].label, color: color(panel, id), pts: byType[id] }));
+			if (byType[REF]) raw.unshift({ id: REF, label: `${D.types[REF].label} (기준)`, color: 'var(--ref)', pts: byType[REF], ref: true });
 			const card = el('div', { class: 'card' });
 			card.append(el('h3', {}, panel.title));
-			const legend = el('div', { class: 'legend' });
-			for (const s of series) {
-				const key = svgEl('svg', { width: 16, height: 4 });
-				key.append(svgEl('line', { x1: 0, x2: 16, y1: 2, y2: 2, stroke: s.color, 'stroke-width': 2, ...(s.ref ? { 'stroke-dasharray': '4 2' } : {}) }));
-				const item = el('span'); item.append(key, document.createTextNode(s.label)); legend.append(item);
-			}
-			card.append(legend);
 			row.append(card);
-			chart(card, metric, series, panel);
+			chart(card, metric, raw, panel);
 		}
 		const det = el('details'); det.append(el('summary', {}, '표로 보기 (반복 중앙값)'), table(metric, byType));
 		root.append(det);
 	}
 }
+
+function genTable() {
+	const g = D.generation;
+	const ids = [...SORTED, ...RANDOM].filter((id) => g[id]).sort((a, b) => g[a].nsPerId - g[b].nsPerId);
+	if (!ids.length) return;
+	const det = el('details');
+	det.append(el('summary', {}, `ID 생성 시간 (앱에서 미리 생성, ${g[ids[0]].n.toLocaleString()}개 기준, 삽입 시간에는 포함 안 됨)`));
+	const wrap = el('div', { class: 'tablewrap' });
+	const t = el('table');
+	const hr = el('tr'); hr.append(el('th', {}, 'ID'), el('th', {}, '개당 생성 시간'));
+	t.append(hr);
+	for (const id of ids) { const tr = el('tr'); tr.append(el('td', {}, D.types[id].label), el('td', {}, fmtV(g[id].nsPerId / 1000, 'µs'))); t.append(tr); }
+	wrap.append(t); det.append(wrap);
+	$('#gen').append(det);
+}
+genTable();
 
 const c = Object.values(D.meta)[0].config;
 $('#sub').textContent = `${D.run} · 테이블을 ${c.nMin.toLocaleString()}행에서 ${c.nMax.toLocaleString()}행까지 키우며 10배 구간마다 ${c.pointsPerDecade}번 측정 · 한 건 삽입 ${c.singleW}번, 조회 ${c.readN}번씩 · x축은 행 수(log)`;

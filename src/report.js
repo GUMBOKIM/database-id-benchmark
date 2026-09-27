@@ -20,11 +20,15 @@ const METRICS = [
 	{ key: 'single_p50', title: '한 건 삽입 지연 p50 (커밋 포함)', unit: 'µs', log: true, get: (p) => p.single.p50us },
 	{ key: 'single_p99', title: '한 건 삽입 지연 p99 (커밋 포함)', unit: 'µs', log: true, get: (p) => p.single.p99us },
 	{ key: 'uniform_server', title: 'ID 조회, 균등: 서버 실행 시간 평균', unit: 'µs', log: true, get: (p) => p.uniform.server?.serverUs },
-	{ key: 'uniform_p99', title: 'ID 조회, 균등: 클라이언트 p99', unit: 'µs', log: true, get: (p) => p.uniform.p99us },
+	{ key: 'uniform_p50', title: 'ID 조회, 균등: 클라이언트 p50 (왕복 포함)', unit: 'µs', log: true, get: (p) => p.uniform.p50us },
+	{ key: 'uniform_p99', title: 'ID 조회, 균등: 클라이언트 p99 (왕복 포함)', unit: 'µs', log: true, get: (p) => p.uniform.p99us },
 	{ key: 'uniform_reads', title: 'ID 조회, 균등: 조회당 캐시 밖 읽기 (블록)', unit: '', log: false, get: (p) => p.uniform.server?.readsPerCall },
 	{ key: 'recent_server', title: 'ID 조회, 최근 편중: 서버 실행 시간 평균', unit: 'µs', log: true, get: (p) => p.recent.server?.serverUs },
+	{ key: 'recent_p50', title: 'ID 조회, 최근 편중: 클라이언트 p50 (왕복 포함)', unit: 'µs', log: true, get: (p) => p.recent.p50us },
+	{ key: 'recent_p99', title: 'ID 조회, 최근 편중: 클라이언트 p99 (왕복 포함)', unit: 'µs', log: true, get: (p) => p.recent.p99us },
 	{ key: 'recent_reads', title: 'ID 조회, 최근 편중: 조회당 캐시 밖 읽기 (블록)', unit: '', log: false, get: (p) => p.recent.server?.readsPerCall },
 	{ key: 'bytes_row', title: '행당 용량 (테이블 + 인덱스)', unit: 'B', log: false, get: (p) => (p.size.tableBytes + p.size.indexBytes) / p.n },
+	{ key: 'table_row', title: '행당 테이블 용량', unit: 'B', log: false, get: (p) => p.size.tableBytes / p.n },
 	{ key: 'index_row', title: '행당 인덱스 용량', unit: 'B', log: false, get: (p) => p.size.indexBytes / p.n },
 	{ key: 'bulk', title: '묶음 삽입 처리량 (참고)', unit: 'rows/s', log: true, get: (p) => p.bulk.rowsPerSec },
 ];
@@ -82,7 +86,7 @@ writeFileSync(`${dir}/summary.csv`, csv.join('\n') + '\n');
 // ---------------------------------------------------------------- html
 
 const TYPES = Object.fromEntries(Object.entries(ID_TYPES).map(([k, v]) => [k, { label: v.label, sorted: v.sorted, kind: v.kind }]));
-const payload = { run: dir.split('/').at(-1), metrics: METRICS.map(({ get, ...m }) => m), data, meta, types: TYPES };
+const payload = { run: dir.split('/').at(-1), metrics: METRICS.map(({ get, ...m }) => m), data, meta, types: TYPES, generation: runs[0].generation ?? {} };
 const html = readFileSync(new URL('./report-template.html', import.meta.url), 'utf8')
 	.replace('/*__DATA__*/null', JSON.stringify(payload).replace(/</g, '\\u003c'));
 writeFileSync(`${dir}/report.html`, html);
