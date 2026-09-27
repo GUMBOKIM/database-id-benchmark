@@ -1,43 +1,47 @@
 # database-id-benchmark
 
-자동 생성 ID 17종(auto increment, Snowflake, UUID v1/v3/v4/v5/v6/v7, ULID, CUID v1/v2, NanoID,
-ObjectId, KSUID, XID, TypeID 등)을 PK로 썼을 때, DB별로 **삽입 속도 · 용량 · 조회 속도**가
-어떻게 달라지는지 재는 벤치마크입니다.
+자동 생성 ID(auto increment, Snowflake, UUID v1/v4/v6/v7, ULID, ObjectId, TypeID, NanoID, CUID2 등)를
+users 테이블의 PK로 썼을 때 **한 건 삽입 · ID 조회 · 용량**이 어떻게 달라지는지 재는 벤치마크입니다.
 
-대상 DB: PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, SQLite(rowid / WITHOUT ROWID)
+**같은 DB 안에서 ID끼리 비교**하는 용도예요. DB끼리 빠르기를 비교하는 벤치마크가 아니에요.
+지금은 PostgreSQL을 대상으로 하고, MySQL도 같은 코드로 돌릴 수 있어요.
 
 ## 실행
 
 호스트에는 **Docker만** 있으면 됩니다. Node.js와 라이브러리는 전부 컨테이너 안에서 돌아갑니다.
+CPU 고정과 I/O 제한이 실제 하드웨어에 걸리도록 **네이티브 Docker Engine**(`docker context use default`)에서 돌리세요.
+기본값은 개발 PC(Ryzen 9 7950X, `/dev/nvme1n1`)에 맞춰져 있어요. 다른 PC에서는 `DB_CPUS`, `RUNNER_CPUS`를 바꿔 주세요.
 
 ```bash
-./bench.sh                                   # 전체 (기본 설정, 몇 시간 걸림)
-SIZES=10,100,1000 LOOKUPS=200 ./bench.sh     # 빠른 동작 확인
-DBS="postgres mysql" ./bench.sh              # 일부 DB만
+sudo scripts/host-prep.sh on        # (선택) 클럭 고정, 페이지 캐시 비우기
+N_MAX=10000 ./bench.sh              # 동작 확인, 몇 분
+./bench.sh                          # 본 측정, PostgreSQL 약 1.5~2시간
+RUN_ID=<위 실행> REPS="2 3" TYPES=autoinc,uuidv4,uuidv7,uuidv4_str,ulid,nanoid ./bench.sh
+                                    # 같은 실행에 반복 측정 추가
+DBS="postgres mysql" ./bench.sh     # MySQL도 함께
+sudo scripts/host-prep.sh off       # 원래대로
 ```
-
-**Windows**에서는 WSL2(Ubuntu) 터미널에서 실행하세요. Git Bash에서도 돌아가긴 해요. Docker Desktop이 WSL2 백엔드를 쓰고 있어야 해요. x86 PC에서는 SQL Server도 에뮬레이션 없이 네이티브로 돌아요.
-
-실행 전에 Docker Desktop 설정 → Resources에서 **메모리를 8GB 이상**으로 잡아 주세요. DB 하나(2GB)와 실행기(2GB)가 동시에 떠요.
 
 결과는 `results/<RUN_ID>/`에 쌓입니다.
 
-- `<db>.json`: 원본 측정값. 측정이 하나 끝날 때마다 저장되므로, 도중에 멈춰도 그때까지의 결과는 남습니다.
-- `REPORT.md`: DB별 표
-- `summary.csv`: 그래프용. DB × ID × 건수마다 한 줄입니다.
+- `<db>.r<반복>.json`: 원본 측정값. 측정 지점마다 저장되므로, 도중에 멈춰도 그때까지의 결과는 남습니다.
+- `report.html`: DB별 그래프. x축은 행 수(log)이고, 반복했다면 중앙값 선과 최소~최대 띠로 그려요.
+- `summary.csv`: DB × 반복 × ID × 측정 지점마다 한 줄입니다.
 
 ### 설정 (환경 변수)
 
 | 변수 | 기본값 | 의미 |
 | --- | --- | --- |
-| `DBS` | 전부 | `postgres mysql mariadb oracle mssql sqlite sqlite_norowid` |
-| `TYPES` | 17종 전부 | 쉼표로 구분, `src/ids.js`의 키 |
-| `SIZES` | `10,…,10000000` | 테이블 행 수 |
-| `BIG_N` / `BIG_TYPES` | `10000000` / `autoinc,uuidv4,uuidv7,ulid,cuid2` | `BIG_N` 이상 건수에서는 이 ID들만 실행해요. 시간을 줄이려는 설정이에요. |
-| `BATCH` | `1000` | INSERT 한 번에 넣는 행 수 |
-| `LOOKUPS` | `20000` | 조회 횟수 (ID, email 각각) |
-| `CACHE_MB` | `256` | DB 캐시 크기 |
-| `CONC_WORKERS` / `CONC_ROWS` | `16` / `100000` | 동시 삽입 연결 수 / 행 수. `CONC_WORKERS=0`이면 건너뜀 |
+| `DBS` | `postgres` | `postgres mysql mariadb` |
+| `REPS` | `1` | 반복 번호 목록. `"1 2 3"`이면 세 번, 매번 새 컨테이너 |
+| `TYPES` | 12종 | 쉼표로 구분, `src/ids.js`의 키 |
+| `N_MIN` / `N_MAX` | `1000` / `10000000` | 측정 지점 범위 |
+| `POINTS_PER_DECADE` | `10` | 10배 구간마다 측정 지점 수 (log 간격) |
+| `SINGLE_W` | `1000` | 측정 지점마다 한 건씩 넣으며 재는 행 수 |
+| `READ_N` / `READ_WARMUP` | `5000` / `500` | 조회 패턴마다 조회 수 / 워밍업 |
+| `RECENT_FRAC` / `RECENT_SHARE` | `0.1` / `0.9` | 최근 편중 조회: 90%를 최근 10% 행에서 |
+| `DB_CPUS` / `RUNNER_CPUS` | `0-7,16-23` / `8-15,24-31` | CPU 고정. 7950X의 CCD 두 개에 나눠서 L3 캐시도 따로 써요 |
+| `BATCH` | `1000` | 측정 지점 사이를 채울 때 INSERT 한 번에 넣는 행 수 |
 
 ## 무엇을 재나
 
@@ -47,84 +51,85 @@ ID 종류마다 `users_<종류>` 테이블을 만들고, 측정이 끝나면 지
 
 ```sql
 id            <ID별 타입>   primary key
+account       varchar(50)   unique      -- 로그인 아이디
+password_hash varchar(255)              -- bcrypt 모양의 60자 문자열
+name          varchar(50)               -- 한글 이름
+phone_number  varchar(20)               -- 010-XXXX-XXXX
 email         varchar(255)  unique
-name          varchar(100)
-password_hash varchar(255)  -- bcrypt 모양의 60자 문자열
-status        varchar(20)   default 'active'
-created_at    timestamp     default now(), 인덱스
+created_at    timestamp     default now()
 updated_at    timestamp     default now()
 ```
 
-보조 인덱스를 두 개 넣은 이유가 있어요. InnoDB와 SQL Server는 보조 인덱스마다 PK를 같이 저장해서, ID가 길면 보조 인덱스도 함께 커지기 때문이에요.
+`account`와 `email`은 해시로 시작해서, ID 종류와 상관없이 무작위 순서로 들어가요. 실제 가입 순서와 같아요.
 
 ### ID별 저장 타입
 
-| ID | PostgreSQL | MySQL | MariaDB | Oracle | SQL Server | SQLite |
-| --- | --- | --- | --- | --- | --- | --- |
-| auto increment | `bigint identity` | `bigint auto_increment` | 〃 | `number(19) identity` | `bigint identity` | `integer` (rowid) |
-| Snowflake | `bigint` | `bigint` | `bigint` | `number(19)` | `bigint` | `integer` |
-| UUID v1·v3·v4·v5·v6·v7 | `uuid` | `binary(16)` | `uuid` | `raw(16)` | `uniqueidentifier` | `blob` |
-| UUID v4 (varchar), ULID, CUID, CUID2, NanoID, ObjectId, KSUID, XID, TypeID | `varchar(n)` | `varchar(n)` | `varchar(n)` | `varchar2(n)` | `varchar(n)` | `text` |
+| ID | PostgreSQL | MySQL | 정렬 |
+| --- | --- | --- | --- |
+| auto increment | `bigint identity` | `bigint auto_increment` | ✅ |
+| Snowflake | `bigint` | `bigint` | ✅ |
+| UUID v6, v7 | `uuid` | `binary(16)` | ✅ |
+| UUID v1 | `uuid` | `binary(16)` | ❌ 시간 기반이지만 바이트 순서는 정렬되지 않아요 |
+| UUID v4 | `uuid` | `binary(16)` | ❌ |
+| ULID (monotonic), ObjectId, TypeID | `varchar(n)` | `varchar(n)` | ✅ |
+| UUID v4 (varchar), NanoID, CUID2 | `varchar(n)` | `varchar(n)` | ❌ |
 
-- UUID v3/v5는 각 행의 email로 만듭니다.
-- SQLite `WITHOUT ROWID`는 auto increment를 지원하지 않아서 그 조합은 건너뜁니다.
+### 측정 방식
 
-### 측정 항목
+테이블 하나를 빈 상태에서 `N_MAX`까지 키우면서, **10배 구간마다 10개**(1000, 1260, 1580, 2000, …)의 측정 지점에서 멈춰서 잽니다.
+측정 지점 N마다 다음 순서로 진행해요.
 
-행 수(`SIZES`)마다, ID 종류마다 다음을 잽니다.
+1. **채우기**: 이전 지점부터 N − `SINGLE_W`까지 `BATCH`건씩 묶어서 넣어요. 처리량은 참고용으로만 기록해요.
+2. **한 건 삽입**: 마지막 `SINGLE_W`건을 한 건씩 prepared statement와 autocommit으로 넣고, 한 건마다 지연을 재요. 실제 서비스의 가입 요청 하나와 같은 모양이에요.
+3. **용량**: 테이블과 인덱스를 나눠서 재요 (PostgreSQL `pg_table_size` / `pg_indexes_size`, MySQL은 `ANALYZE TABLE` 후 `data_length` / `index_length`).
+4. **ID 조회, 균등**: 0~N 중에서 무작위로 골라 `SELECT * WHERE id = ?`를 `READ_N`번 해요.
+5. **ID 조회, 최근 편중**: 조회의 90%는 최근 10% 행에서 골라요. 정렬되는 ID는 최근 행이 인덱스 끝에 모여 캐시에 남지만, 랜덤 ID는 흩어져 있어요.
 
-1. **삽입**: `BATCH`건씩 여러 행을 한 문장으로 넣어요. 연결은 하나이고 autocommit이에요. 전체 속도와 함께 10% 구간마다 속도를 기록해서, 테이블이 커질수록 느려지는지 봐요.
-2. **용량**: 테이블과 인덱스를 나눠서 재요.
-   - PostgreSQL: `pg_table_size` / `pg_indexes_size`
-   - InnoDB: `data_length`(PK 포함) / `index_length`
-   - Oracle: `user_segments`
-   - SQL Server: `dm_db_partition_stats`
-   - SQLite: `dbstat`
-3. **ID로 조회, email로 조회**: 이미 있는 행을 무작위로 골라 `LOOKUPS`번 조회해요. 워밍업 1,000번 후에 재요.
-   - 클라이언트에서 잰 p50/p95/p99
-   - DB가 기록한 실행 시간과 디스크 읽기 수
+조회는 클라이언트 지연(p50/p95/p99)과 함께 DB가 기록한 값도 남겨요.
 
-     | DB | 출처 |
-     | --- | --- |
-     | PostgreSQL | `pg_stat_statements` |
-     | MySQL/MariaDB | `performance_schema.prepared_statements_instances` + `Innodb_buffer_pool_reads` |
-     | Oracle | `v$sql` |
-     | SQL Server | `sys.dm_exec_query_stats` |
-     | SQLite | 같은 프로세스 안에서 돌아서 클라이언트 시간이 곧 엔진 시간이에요. |
-4. **동시 삽입**: 빈 테이블에 `CONC_WORKERS`개 연결이 한 건씩(autocommit) `CONC_ROWS`건을 넣어요. 순차 ID는 쓰기가 맨 오른쪽 페이지 한 곳에 몰려서 경합이 생길 수 있어요. 그 영향을 확인하는 측정이에요. SQLite는 쓰기가 한 번에 하나뿐이라 제외해요.
-5. **환경 확인**
-   - DB마다 시작 전후로 같은 CPU 계산을 3초 돌려서 속도가 변하지 않았는지 봐요.
-   - 마지막에 첫 번째 측정(100만 건 이하 중 가장 큰 것)을 한 번 더 돌려서 처음과 비교해요.
+| DB | 출처 |
+| --- | --- |
+| PostgreSQL | `pg_stat_statements`: 서버 실행 시간, 캐시(`shared_buffers`) 밖에서 읽은 블록 수 |
+| MySQL | `performance_schema.prepared_statements_instances`, `Innodb_buffer_pool_reads` |
 
-### 공정하게 하려고 한 것
+리포트의 조회 그래프는 **서버 실행 시간**을 주로 봐요. 클라이언트 지연에는 ID와 상관없는 왕복 시간이 섞여서 차이를 가려요.
 
-- **DB는 한 번에 하나씩** 띄웁니다. 여러 DB를 동시에 돌리면 CPU의 공유 캐시와 메모리 대역폭을 서로 뺏어서, 메모리를 많이 읽는 작업이 5~10배 느려지는 것을 미리 확인했어요.
-- DB 컨테이너는 모두 **CPU 2개, 메모리 2GB, 캐시 `CACHE_MB`**로 맞춰요. 2개로 잡은 이유는 Oracle Free가 2스레드로 제한되기 때문이에요.
-  - SQL Server는 버퍼만 따로 제한하는 설정이 없어서 `max server memory`로 근사치를 맞춰요.
-  - Oracle은 SGA 자동 관리를 끄고 `db_cache_size`를 고정해요(`docker/oracle-init/`).
-- 실행기(runner)도 Docker 안에서 같은 네트워크로 붙어요. SQLite는 실행기 안에서 돌기 때문에 실행기도 CPU 2개, 메모리 2GB로 제한해요. SQLite 파일은 호스트 폴더가 아니라 Docker 볼륨에 둬요.
-- ID는 `src/gen.js`가 **미리 한 번만** 만들어 `cache/`에 저장해요. 모든 DB에 같은 ID가 들어가고, 삽입 시간에 ID 생성 비용은 포함되지 않아요. 생성 속도는 따로 기록해요.
-- 이미지는 digest로 고정해서, 누가 돌려도 같은 빌드를 받아요.
+### 환경
 
-### 한계
+| 항목 | 설정 | 근거 |
+| --- | --- | --- |
+| DB 설정 | 전부 기본값 (PostgreSQL `shared_buffers` 128MB, InnoDB 버퍼 풀 128MB) | 통계 수집(`pg_stat_statements`, `performance_schema`)만 켜요 |
+| 메모리, 디스크 I/O | 제한 없음 | |
+| CPU | DB와 실행기를 서로 다른 CCD에 고정 | CPU 캐시를 서로 뺏지 않게 |
+| DB 실행 | 한 번에 하나씩, 반복마다 새 컨테이너 | |
 
-- **같은 DB 안에서 ID끼리 비교**하는 용도예요. DB끼리 빠르기를 비교하는 벤치마크가 아니에요. DB마다 설정, 내구성 기본값, 드라이버가 다르기 때문이에요.
-- macOS와 Docker Desktop에서는 프로세스를 특정 CPU 코어에 고정할 수 없어요. 그래서 위의 CPU 확인 측정으로 대신해요.
-- SQL Server는 ARM용 이미지가 없어서, Apple Silicon에서는 x86 에뮬레이션(Rosetta)으로 돌아요.
-- ID를 짧은 시간에 몰아서 만들기 때문에, 시간 기반 ID의 시간 값이 실제 서비스보다 촘촘해요. `ulid` 패키지는 같은 밀리초 안에서는 순서를 보장하지 않아요.
-- 각 측정은 1회예요.
+메모리 제한이 없어서, 이 PC(61GB)에서는 1천만 행(약 3GB)이 전부 OS 페이지 캐시에 들어가요.
+그래서 DB 버퍼(128MB)를 넘은 뒤에는 **OS 캐시에서 읽는 비용**까지 보이고, 디스크까지 가는 비용은 보이지 않아요.
+메모리가 데이터보다 넉넉한 서버와 같은 상황이에요. 조회 그래프의 "캐시 밖 읽기"는 DB 버퍼 밖에서 읽은 블록 수예요.
+
+ID는 `src/gen.js`가 **미리 한 번만** 만들어 `cache/`에 저장해요. 모든 DB와 반복에 같은 ID가 들어가고, 삽입 시간에 ID 생성 비용은 포함되지 않아요.
+
+## 한계
+
+- Docker Desktop(VM)에서는 CPU 고정이 가상 CPU에 걸려서 의미가 없고, 커밋이 VM 디스크를 거쳐 느리고 들쭉날쭉해요(약 1.6~2.7ms). 네이티브 엔진을 쓰세요.
+- 한 건 삽입 지연의 대부분은 커밋(WAL 기록) 시간이에요. 그래서 커밋을 뺀 **서버 실행 시간**도 따로 기록해요. ID 차이는 주로 여기서 보여요.
+- DB마다 시작 전후로 같은 CPU 계산을 3초 돌려서, 측정 중에 CPU 속도가 변하지 않았는지 봐요.
+- 데이터가 메모리보다 커서 디스크를 읽어야 하는 상황은 재지 않아요. 그런 서버라면 랜덤 ID의 손해가 이 결과보다 커요.
+- ID를 짧은 시간에 몰아서 만들기 때문에 시간 기반 ID의 시간 값이 실제 서비스보다 촘촘해요. ULID는 이 때문에 순서가 깨지지 않도록 monotonic 방식으로 만들어요.
+- 조회와 삽입은 연결 하나에서 순서대로 해요. 여러 요청이 동시에 몰릴 때의 경합은 재지 않아요.
 
 ## 파일 구성
 
 ```
-bench.sh              전체 실행 (ID 생성 → DB 하나씩 → 리포트)
-docker-compose.yml    DB와 실행기 컨테이너 (버전·자원 고정)
-docker/oracle-init/   Oracle 캐시 크기 설정
-src/ids.js            ID 17종 생성기
-src/gen.js            ID를 미리 만들어 cache/에 저장
-src/config.js         환경 변수 설정
-src/bench.js          DB 하나에 대해 전체 측정
-src/adapters/*.js     DB별 테이블 생성, 삽입, 용량, 조회, 서버 통계
-src/report.js         REPORT.md, summary.csv 생성
-results/_prelim/      초기 실험 결과 (구버전 코드, 참고용)
+bench.sh                  전체 실행 (ID 생성 → DB 하나씩 × 반복 → 리포트)
+docker-compose.yml        DB와 실행기 컨테이너 (버전, CPU 고정)
+scripts/host-prep.sh      호스트 클럭 고정, 페이지 캐시 비우기 (sudo)
+src/ids.js                ID 생성기
+src/gen.js                ID를 미리 만들어 cache/에 저장
+src/config.js             환경 변수 설정, 측정 지점 계산
+src/bench.js              DB 하나에 대해 전체 측정
+src/adapters/*.js         DB별 테이블 생성, 삽입, 용량, 조회, 서버 통계
+src/report.js             summary.csv, report.html 생성
+src/report-template.html  report.html의 틀
+results/_prelim/          초기 실험 결과 (구버전 코드, 참고용)
 ```

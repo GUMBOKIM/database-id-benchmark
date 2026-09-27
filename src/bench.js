@@ -1,31 +1,45 @@
-// Runs every ID type at every size against ONE database, inside the runner container.
+// Grows one table per ID type from empty to N_MAX against ONE database, inside the
+// runner container, and measures it at every checkpoint (config.js CHECKPOINTS).
 // Usage (normally via bench.sh): node src/bench.js <db>
-// Writes results/<RUN_ID>/<db>.json after every measurement, so a crash keeps what ran.
+// Writes results/<RUN_ID>/<db>.r<REP>.json after every checkpoint, so a crash keeps what ran.
+//
+// At each checkpoint N:
+//   1. bulk-load up to N - SINGLE_W (BATCH rows per statement; throughput kept for reference)
+//   2. insert the last SINGLE_W rows one per statement, autocommit, and time each one
+//   3. table / index size
+//   4. READ_N lookups by id, uniform over all rows
+//   5. READ_N lookups by id, RECENT_SHARE of them in the newest RECENT_FRAC of rows
 import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { ID_TYPES, emailOf } from './ids.js';
-import { SIZES, BATCH, LOOKUPS, CONC_WORKERS, CONC_ROWS, RUN_ID, typesFor, maxNFor, TYPES, BIG_N, BIG_TYPES, CACHE_MB } from './config.js';
+import { ID_TYPES, emailOf, accountOf, phoneOf } from './ids.js';
+import {
+	TYPES, CHECKPOINTS, BATCH, SINGLE_W, READ_N, READ_WARMUP, RECENT_FRAC, RECENT_SHARE,
+	RUN_ID, REP, N_MIN, N_MAX, POINTS_PER_DECADE,
+} from './config.js';
 import postgres from './adapters/postgres.js';
 import { mysqlAdapter, mariadbAdapter } from './adapters/mysql.js';
-import oracle from './adapters/oracle.js';
-import mssql from './adapters/mssql.js';
-import { sqliteAdapter, sqliteNoRowidAdapter } from './adapters/sqlite.js';
 
-const ADAPTERS = { postgres, mysql: mysqlAdapter, mariadb: mariadbAdapter, oracle, mssql, sqlite: sqliteAdapter, sqlite_norowid: sqliteNoRowidAdapter };
+const ADAPTERS = { postgres, mysql: mysqlAdapter, mariadb: mariadbAdapter };
 const adapter = ADAPTERS[process.argv[2]];
 if (!adapter) throw new Error(`usage: node src/bench.js <${Object.keys(ADAPTERS).join('|')}>`);
 
 const log = (...m) => console.log(new Date().toISOString().slice(11, 19), `[${adapter.name}]`, ...m);
-const percentile = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))];
 const seconds = (t0) => Number(process.hrtime.bigint() - t0) / 1e9;
+const percentiles = (lat) => {
+	lat.sort();
+	const at = (p) => lat[Math.min(lat.length - 1, Math.floor((p / 100) * lat.length))];
+	return { count: lat.length, p50us: at(50), p95us: at(95), p99us: at(99), maxus: lat.at(-1) };
+};
 
 // ---------------------------------------------------------------- data
 
-const NAMES = ['Kim Minjun', 'Lee Seoyeon', 'Park Jiho', 'Choi Yuna', 'Jung Hayoon', 'Alex Smith', 'Maria Garcia', 'Wei Chen'];
+const NAMES = ['김민준', '이서연', '박지호', '최유나', '정하윤', '강도윤', '조서준', '윤지우', '장예준', '임수아'];
 const makeUser = (i) => ({
-	email: emailOf(i),
-	name: NAMES[i % NAMES.length],
+	account: accountOf(i),
 	passwordHash: `$2b$10$${randomBytes(40).toString('base64').replace(/[+/=]/g, 'x').slice(0, 53)}`,
+	name: NAMES[i % NAMES.length],
+	phone: phoneOf(i),
+	email: emailOf(i),
 });
 
 // IDs come from cache/<type>.txt (src/gen.js), one type in memory at a time.
@@ -34,14 +48,14 @@ function loadIds(type) {
 	const file = `cache/${type}.txt`;
 	if (!existsSync(file)) throw new Error(`${file} missing; run src/gen.js first`);
 	const ids = readFileSync(file, 'utf8').split('\n');
-	if (ids.length - 1 < maxNFor(type)) throw new Error(`${file} has too few ids; delete cache/ and regenerate`);
+	if (ids.length - 1 < N_MAX) throw new Error(`${file} has too few ids; delete cache/ and regenerate`);
 	return ids;
 }
 
 // ---------------------------------------------------------------- measurements
 
-// CPU reference: a fixed busy loop. Compare before/after (and across databases) to
-// see whether the machine ran at the same speed for the whole run.
+// CPU reference: a fixed busy loop. Compare before/after to see whether the machine
+// ran at the same speed for the whole run.
 function calibrate() {
 	const end = Date.now() + 3000;
 	let n = 0;
@@ -53,129 +67,109 @@ function calibrate() {
 	return Math.round(n / 3 / 1e6); // million iterations per second
 }
 
-async function insertAll(conn, table, spec, ids, n) {
-	// Batch size shrinks for tiny tables so there are still 10 slices to report.
-	const batch = Math.max(1, Math.min(BATCH, Math.floor(n / 10)));
-	const sliceSize = n / 10;
-	const slices = [];
-	let nextSlice = sliceSize;
-	let sliceStart = process.hrtime.bigint();
-	let sliceRows = 0;
-	const t0 = sliceStart;
-	for (let off = 0; off < n; off += batch) {
-		const end = Math.min(off + batch, n);
+async function bulkLoad(conn, table, spec, ids, from, to) {
+	const t0 = process.hrtime.bigint();
+	for (let off = from; off < to; off += BATCH) {
+		const end = Math.min(off + BATCH, to);
 		const users = Array.from({ length: end - off }, (_, j) => makeUser(off + j));
 		await conn.insert(table, spec, ids ? ids.slice(off, end) : [], users);
-		sliceRows += end - off;
-		if (end >= nextSlice || end === n) {
-			slices.push(Math.round(sliceRows / seconds(sliceStart)));
-			sliceStart = process.hrtime.bigint();
-			sliceRows = 0;
-			nextSlice += sliceSize;
-		}
 	}
 	const sec = seconds(t0);
-	return { seconds: sec, rowsPerSec: Math.round(n / sec), batch, slices };
+	return { rows: to - from, seconds: sec, rowsPerSec: to > from ? Math.round((to - from) / sec) : null };
 }
 
-// Sequential point lookups for random existing rows on one connection.
-async function lookups(conn, table, col, n, query) {
-	const warmup = Math.min(1000, LOOKUPS);
-	for (let k = 0; k < warmup; k++) await query(Math.floor(Math.random() * n));
-	await conn.statsReset(table, col);
-	const lat = new Float64Array(LOOKUPS);
+async function singleInserts(conn, table, spec, ids, from, to) {
+	await conn.statsReset(table, 'insert');
+	const lat = new Float64Array(to - from);
+	for (let i = from; i < to; i++) {
+		const user = makeUser(i);
+		const s = process.hrtime.bigint();
+		await conn.insertOne(table, spec, ids ? ids[i] : null, user);
+		lat[i - from] = Number(process.hrtime.bigint() - s) / 1e3;
+	}
+	return { ...percentiles(lat), server: await conn.stats(table, 'insert') };
+}
+
+// Sequential point lookups by id on one connection. pick() returns a row index.
+async function lookups(conn, table, pick, query) {
+	for (let k = 0; k < READ_WARMUP; k++) await query(pick());
+	await conn.statsReset(table, 'select');
+	const lat = new Float64Array(READ_N);
 	let misses = 0;
 	const t0 = process.hrtime.bigint();
-	for (let k = 0; k < LOOKUPS; k++) {
-		const i = Math.floor(Math.random() * n);
+	for (let k = 0; k < READ_N; k++) {
+		const i = pick();
 		const s = process.hrtime.bigint();
 		if ((await query(i)) !== 1) misses++;
 		lat[k] = Number(process.hrtime.bigint() - s) / 1e3;
 	}
 	const sec = seconds(t0);
-	const server = await conn.stats(table, col);
-	lat.sort();
-	return { qps: Math.round(LOOKUPS / sec), p50us: percentile(lat, 50), p95us: percentile(lat, 95), p99us: percentile(lat, 99), misses, server };
+	const server = await conn.stats(table, 'select');
+	return { qps: Math.round(READ_N / sec), ...percentiles(lat), misses, server };
 }
 
-async function measure(conn, type, ids, n) {
+async function growAndMeasure(conn, type, ids) {
 	const spec = ID_TYPES[type];
 	const table = `users_${type}`;
-	await conn.setup(table, spec);
-	const insert = await insertAll(conn, table, spec, ids, n);
-	const size = await conn.size(table);
 	const idOf = (i) => (spec.kind === 'db' ? String(i + 1) : ids[i]);
-	const byId = await lookups(conn, table, 'id', n, (i) => conn.byId(table, spec, idOf(i)));
-	const byEmail = await lookups(conn, table, 'email', n, (i) => conn.byEmail(table, emailOf(i)));
+	const query = (i) => conn.byId(table, spec, idOf(i));
+	await conn.setup(table, spec);
+	let filled = 0;
+	for (const n of CHECKPOINTS) {
+		const w = Math.min(SINGLE_W, n - filled);
+		const bulk = await bulkLoad(conn, table, spec, ids, filled, n - w);
+		const single = await singleInserts(conn, table, spec, ids, n - w, n);
+		filled = n;
+		const size = await conn.size(table);
+		const uniform = await lookups(conn, table, () => Math.floor(Math.random() * n), query);
+		const recentFrom = n - Math.max(1, Math.ceil(n * RECENT_FRAC));
+		const recent = await lookups(conn, table, () => (Math.random() < RECENT_SHARE
+			? recentFrom + Math.floor(Math.random() * (n - recentFrom))
+			: Math.floor(Math.random() * recentFrom)), query);
+		record(type, { n, bulk, single, size, uniform, recent });
+	}
 	await conn.drop(table);
-	return { type, n, insert, size, byId, byEmail };
-}
-
-// Many connections inserting one row per statement (autocommit) into an empty table.
-// Sequential IDs all land on the right-most index page; this is where that can hurt.
-async function concurrentInsert(type, ids) {
-	const spec = ID_TYPES[type];
-	const table = `users_${type}`;
-	const setupConn = await adapter.open();
-	await setupConn.setup(table, spec);
-	const conns = await Promise.all(Array.from({ length: CONC_WORKERS }, () => adapter.open()));
-	const t0 = process.hrtime.bigint();
-	await Promise.all(conns.map(async (c, w) => {
-		for (let i = w; i < CONC_ROWS; i += CONC_WORKERS) await c.insert(table, spec, ids ? [ids[i]] : [], [makeUser(i)]);
-	}));
-	const sec = seconds(t0);
-	await Promise.all(conns.map((c) => c.close()));
-	await setupConn.drop(table);
-	await setupConn.close();
-	return { type, workers: CONC_WORKERS, rows: CONC_ROWS, seconds: sec, rowsPerSec: Math.round(CONC_ROWS / sec) };
 }
 
 // ---------------------------------------------------------------- main
 
 mkdirSync(`results/${RUN_ID}`, { recursive: true });
-const outFile = `results/${RUN_ID}/${adapter.name}.json`;
-const types = TYPES.filter((t) => adapter.supports(ID_TYPES[t]));
+const outFile = `results/${RUN_ID}/${adapter.name}.r${REP}.json`;
 const conn = await adapter.open();
 const result = {
 	db: adapter.name,
+	rep: REP,
 	env: await conn.init(),
-	config: { sizes: SIZES, bigN: BIG_N, bigTypes: BIG_TYPES, batch: BATCH, lookups: LOOKUPS, cacheMb: CACHE_MB, concWorkers: CONC_WORKERS, concRows: CONC_ROWS },
+	config: {
+		types: TYPES, nMin: N_MIN, nMax: N_MAX, pointsPerDecade: POINTS_PER_DECADE, checkpoints: CHECKPOINTS,
+		batch: BATCH, singleW: SINGLE_W, readN: READ_N, readWarmup: READ_WARMUP,
+		recentFrac: RECENT_FRAC, recentShare: RECENT_SHARE,
+	},
 	generation: existsSync('cache/meta.json') ? JSON.parse(readFileSync('cache/meta.json', 'utf8')) : {},
 	calibration: { before: calibrate() },
-	runs: [],
-	concurrent: [],
+	types: {},
 	startedAt: new Date().toISOString(),
 };
 const save = () => writeFileSync(outFile, JSON.stringify(result, null, 2));
-log(result.env.version, `| cache ${result.env.cache} | cpu ref ${result.calibration.before} M/s`);
+log(result.env.version.split(' ').slice(0, 2).join(' '), `| cache ${result.env.cache} | cpu ref ${result.calibration.before} M/s | ${CHECKPOINTS.length} checkpoints to ${N_MAX}`);
 
-for (const type of types) {
-	const ids = loadIds(type);
-	for (const n of SIZES.filter((n) => typesFor(n).includes(type))) {
-		const r = await measure(conn, type, ids, n);
-		result.runs.push(r);
-		save();
-		const srv = (x) => (x.server ? ` (server ${x.server.serverUs.toFixed(0)}µs, ${x.server.readsPerCall.toFixed(2)} reads)` : '');
-		log(`${type} n=${n}: insert ${r.insert.rowsPerSec}/s (${r.insert.slices[0]} → ${r.insert.slices.at(-1)}), ` +
-			`${((r.size.tableBytes + r.size.indexBytes) / 2 ** 20).toFixed(1)} MiB, ` +
-			`id p50 ${r.byId.p50us.toFixed(0)}µs${srv(r.byId)}, email p50 ${r.byEmail.p50us.toFixed(0)}µs${srv(r.byEmail)}` +
-			(r.byId.misses + r.byEmail.misses ? `  !! ${r.byId.misses + r.byEmail.misses} misses` : ''));
-	}
-	if (CONC_WORKERS > 0 && adapter.concurrent !== false) {
-		const c = await concurrentInsert(type, ids);
-		result.concurrent.push(c);
-		save();
-		log(`${type} concurrent x${c.workers}: ${c.rowsPerSec}/s`);
-	}
+// Called after every checkpoint: save and print one line.
+function record(type, p) {
+	(result.types[type] ??= []).push(p);
+	save();
+	const mib = (p.size.tableBytes + p.size.indexBytes) / 2 ** 20;
+	const srv = (x) => (x.server ? `/${x.server.serverUs.toFixed(0)}µs ${x.server.readsPerCall.toFixed(2)}rd` : '');
+	log(`${type} n=${p.n}: bulk ${p.bulk.rowsPerSec ?? '-'}/s, insert p50 ${p.single.p50us.toFixed(0)} p99 ${p.single.p99us.toFixed(0)}µs${srv(p.single)}, ` +
+		`${mib.toFixed(1)} MiB, uniform p50 ${p.uniform.p50us.toFixed(0)}µs${srv(p.uniform)}, recent p50 ${p.recent.p50us.toFixed(0)}µs${srv(p.recent)}` +
+		(p.uniform.misses + p.recent.misses ? `  !! ${p.uniform.misses + p.recent.misses} misses` : ''));
 }
 
-// Re-run the first type's largest run up to 1M rows, to check that the machine did not
-// drift between the start and the end of the run.
-const first = result.runs.filter((r) => r.type === result.runs[0]?.type && r.n <= 1_000_000).at(-1);
-if (first) {
-	const again = await measure(conn, first.type, loadIds(first.type), first.n);
-	result.recheck = { type: first.type, n: first.n, firstRowsPerSec: first.insert.rowsPerSec, againRowsPerSec: again.insert.rowsPerSec };
+for (const type of TYPES) {
+	const t0 = process.hrtime.bigint();
+	await growAndMeasure(conn, type, loadIds(type));
+	log(`${type} done in ${(seconds(t0) / 60).toFixed(1)} min`);
 }
+
 result.calibration.after = calibrate();
 result.finishedAt = new Date().toISOString();
 save();

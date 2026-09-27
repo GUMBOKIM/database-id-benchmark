@@ -2,7 +2,7 @@
 // (src/gen.js) and cached, so insert timings measure only the database, and every
 // database sees exactly the same IDs.
 import { v1, v3, v4, v5, v6, v7, parse as uuidParse } from 'uuid';
-import { ulid } from 'ulid';
+import { monotonicFactory } from 'ulid';
 import cuid from 'cuid';
 import { createId as cuid2 } from '@paralleldrive/cuid2';
 import { nanoid } from 'nanoid';
@@ -12,7 +12,16 @@ import xid from 'xid-js';
 import { typeid } from 'typeid-js';
 
 // Row i of every table is the same user; UUID v3/v5 are derived from this email.
+// email and account start with a hash of i, so their unique indexes fill in random
+// order like real sign-ups do, whatever the ID type.
 export const emailOf = (i) => `${((i * 2654435761) >>> 0).toString(36)}.${i}@example.com`;
+export const accountOf = (i) => `${((i * 2246822519) >>> 0).toString(36)}${i.toString(36)}`;
+// 48271 is coprime with 10, so this is a permutation of 0..1e8-1: unique numbers.
+export const phoneOf = (i) => { const d = String((i * 48271) % 1e8).padStart(8, '0'); return `010-${d.slice(0, 4)}-${d.slice(4)}`; };
+
+// The ulid package is only ordered across milliseconds; the monotonic factory also
+// orders IDs made within one millisecond, which is what an app should use.
+const ulid = monotonicFactory();
 
 // Twitter-style Snowflake: 41 bits ms since epoch | 10 bits worker | 12 bits sequence.
 const EPOCH = 1288834974657n;

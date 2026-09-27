@@ -1,84 +1,89 @@
 // Usage: node src/report.js results/<RUN_ID>
-// Reads every <db>.json in the run folder and writes REPORT.md (tables) and
-// summary.csv (one row per db × type × size, for charts).
+// Reads every <db>.r<rep>.json in the run folder and writes
+//   summary.csv  - one row per db × type × rep × checkpoint
+//   report.html  - log10(N) charts per db, median over repetitions (band = min..max)
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { ID_TYPES } from './ids.js';
 
 const dir = process.argv[2] ?? `results/${readdirSync('results').filter((d) => !d.startsWith('_')).sort().at(-1)}`;
-const dbs = readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(readFileSync(`${dir}/${f}`, 'utf8')));
-const order = ['postgres', 'mysql', 'mariadb', 'oracle', 'mssql', 'sqlite', 'sqlite_norowid'];
-dbs.sort((a, b) => order.indexOf(a.db) - order.indexOf(b.db));
+const files = readdirSync(dir).filter((f) => /\.r\d+\.json$/.test(f)).sort();
+const runs = files.map((f) => JSON.parse(readFileSync(`${dir}/${f}`, 'utf8')));
+if (!runs.length) throw new Error(`no <db>.r<rep>.json in ${dir}`);
 
-const out = [];
-const p = (s = '') => out.push(s);
-const k = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 1e5 ? 0 : 1)}k` : String(n));
-const sizeLabel = (n) => (n >= 1e6 ? `${n / 1e6}M` : n >= 1e3 ? `${n / 1e3}k` : String(n));
-const types = Object.keys(ID_TYPES);
+// ---------------------------------------------------------------- metrics
 
-function grid(db, title, cell) {
-	const sizes = [...new Set(db.runs.map((r) => r.n))].sort((a, b) => a - b);
-	p(`#### ${title}\n`);
-	p(`| ID | ${sizes.map(sizeLabel).join(' | ')} |`);
-	p(`| --- | ${sizes.map(() => '---:').join(' | ')} |`);
-	for (const t of types) {
-		if (!db.runs.some((r) => r.type === t)) continue;
-		p(`| ${ID_TYPES[t].label} | ${sizes.map((n) => { const r = db.runs.find((x) => x.type === t && x.n === n); return r ? cell(r) : ''; }).join(' | ')} |`);
-	}
-	p();
+// Server-side time when the database reports it: it leaves out the client round trip,
+// which is the same for every ID type and hides the differences.
+const METRICS = [
+	{ key: 'single_server', title: '한 건 삽입: 서버 실행 시간 평균 (커밋 제외)', unit: 'µs', log: true, get: (p) => p.single.server?.serverUs },
+	{ key: 'single_reads', title: '한 건 삽입: 건당 캐시 밖 읽기 (블록)', unit: '', log: false, get: (p) => p.single.server?.readsPerCall },
+	{ key: 'single_p50', title: '한 건 삽입 지연 p50 (커밋 포함)', unit: 'µs', log: true, get: (p) => p.single.p50us },
+	{ key: 'single_p99', title: '한 건 삽입 지연 p99 (커밋 포함)', unit: 'µs', log: true, get: (p) => p.single.p99us },
+	{ key: 'uniform_server', title: 'ID 조회, 균등: 서버 실행 시간 평균', unit: 'µs', log: true, get: (p) => p.uniform.server?.serverUs },
+	{ key: 'uniform_p99', title: 'ID 조회, 균등: 클라이언트 p99', unit: 'µs', log: true, get: (p) => p.uniform.p99us },
+	{ key: 'uniform_reads', title: 'ID 조회, 균등: 조회당 캐시 밖 읽기 (블록)', unit: '', log: false, get: (p) => p.uniform.server?.readsPerCall },
+	{ key: 'recent_server', title: 'ID 조회, 최근 편중: 서버 실행 시간 평균', unit: 'µs', log: true, get: (p) => p.recent.server?.serverUs },
+	{ key: 'recent_reads', title: 'ID 조회, 최근 편중: 조회당 캐시 밖 읽기 (블록)', unit: '', log: false, get: (p) => p.recent.server?.readsPerCall },
+	{ key: 'bytes_row', title: '행당 용량 (테이블 + 인덱스)', unit: 'B', log: false, get: (p) => (p.size.tableBytes + p.size.indexBytes) / p.n },
+	{ key: 'index_row', title: '행당 인덱스 용량', unit: 'B', log: false, get: (p) => p.size.indexBytes / p.n },
+	{ key: 'bulk', title: '묶음 삽입 처리량 (참고)', unit: 'rows/s', log: true, get: (p) => p.bulk.rowsPerSec },
+];
+
+const median = (xs) => { const s = [...xs].sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+
+// data[db][metric][type] = [{ n, med, min, max, reps }]
+const data = {};
+const meta = {};
+for (const run of runs) {
+	meta[run.db] ??= { env: run.env, config: run.config, reps: [], calibration: [] };
+	meta[run.db].reps.push(run.rep);
+	meta[run.db].calibration.push({ rep: run.rep, ...run.calibration });
 }
-
-// Server-side time when the database reports it, otherwise what the client measured.
-const lookupCell = (l) => (l.server ? `${l.server.serverUs.toFixed(0)}` : `${l.p50us.toFixed(0)}*`);
-
-p(`# Results: ${dir.split('/').at(-1)}\n`);
-const c = dbs[0]?.config;
-if (c) p(`Sizes ${c.sizes.join(', ')} (≥ ${c.bigN.toLocaleString()} rows: ${c.bigTypes.join(', ')} only), batch ${c.batch}, ${c.lookups.toLocaleString()} lookups, cache ${c.cacheMb} MB, concurrent ${c.concWorkers} × ${c.concRows.toLocaleString()} rows.\n`);
-
-p('## Environment\n');
-p('| DB | Version | Cache | CPU ref before → after (M/s) | Recheck (rows/s, first → again) |');
-p('| --- | --- | --- | --- | --- |');
-for (const db of dbs) {
-	const rc = db.recheck ? `${db.recheck.type} ${sizeLabel(db.recheck.n)}: ${k(db.recheck.firstRowsPerSec)} → ${k(db.recheck.againRowsPerSec)}` : '';
-	p(`| ${db.db} | ${String(db.env.version).split('\n')[0].slice(0, 70)} | ${db.env.cache} | ${db.calibration.before} → ${db.calibration.after ?? '?'} | ${rc} |`);
-}
-p();
-
-const gen = dbs[0]?.generation ?? {};
-if (Object.keys(gen).length) {
-	p('## ID generation (Node.js)\n');
-	p('| ID | ns / id |\n| --- | ---: |');
-	for (const t of types) if (gen[t]) p(`| ${ID_TYPES[t].label} | ${gen[t].nsPerId.toFixed(0)} |`);
-	p();
-}
-
-for (const db of dbs) {
-	p(`## ${db.db}\n`);
-	grid(db, 'Insert, rows/s', (r) => k(r.insert.rowsPerSec));
-	grid(db, 'Insert, last 10% ÷ first 10% of the table', (r) => (r.insert.slices.length > 1 ? (r.insert.slices.at(-1) / r.insert.slices[0]).toFixed(2) : ''));
-	grid(db, 'Size, bytes per row (table + indexes)', (r) => Math.round((r.size.tableBytes + r.size.indexBytes) / r.n));
-	grid(db, 'Size, MiB table / indexes', (r) => `${(r.size.tableBytes / 2 ** 20).toFixed(1)} / ${(r.size.indexBytes / 2 ** 20).toFixed(1)}`);
-	grid(db, 'Lookup by id, µs (server; * = client p50)', (r) => lookupCell(r.byId));
-	grid(db, 'Lookup by id, disk reads per query', (r) => (r.byId.server ? r.byId.server.readsPerCall.toFixed(2) : ''));
-	grid(db, 'Lookup by email, µs (server; * = client p50)', (r) => lookupCell(r.byEmail));
-	if (db.concurrent.length) {
-		p(`#### Concurrent single-row inserts (${db.concurrent[0].workers} connections, ${db.concurrent[0].rows.toLocaleString()} rows)\n`);
-		p('| ID | rows/s |\n| --- | ---: |');
-		for (const x of db.concurrent) p(`| ${ID_TYPES[x.type].label} | ${k(x.rowsPerSec)} |`);
-		p();
+for (const db of Object.keys(meta)) {
+	data[db] = {};
+	const mine = runs.filter((r) => r.db === db);
+	for (const m of METRICS) {
+		data[db][m.key] = {};
+		for (const type of Object.keys(ID_TYPES)) {
+			const byN = new Map();
+			for (const run of mine) for (const p of run.types[type] ?? []) {
+				const v = m.get(p);
+				if (v == null || !Number.isFinite(v)) continue;
+				if (!byN.has(p.n)) byN.set(p.n, []);
+				byN.get(p.n).push(v);
+			}
+			if (!byN.size) continue;
+			data[db][m.key][type] = [...byN].sort((a, b) => a[0] - b[0])
+				.map(([n, vs]) => ({ n, med: median(vs), min: Math.min(...vs), max: Math.max(...vs), reps: vs.length }));
+		}
 	}
 }
 
-writeFileSync(`${dir}/REPORT.md`, out.join('\n'));
+// ---------------------------------------------------------------- csv
 
-const csv = [['db', 'type', 'n', 'insert_rows_per_sec', 'insert_last_over_first', 'table_bytes', 'index_bytes',
-	'id_client_p50_us', 'id_server_us', 'id_reads_per_call', 'email_client_p50_us', 'email_server_us', 'email_reads_per_call'].join(',')];
-for (const db of dbs) {
-	for (const r of db.runs) {
-		csv.push([db.db, r.type, r.n, r.insert.rowsPerSec, r.insert.slices.length > 1 ? (r.insert.slices.at(-1) / r.insert.slices[0]).toFixed(3) : '',
-			r.size.tableBytes, r.size.indexBytes,
-			r.byId.p50us.toFixed(1), r.byId.server?.serverUs.toFixed(1) ?? '', r.byId.server?.readsPerCall.toFixed(3) ?? '',
-			r.byEmail.p50us.toFixed(1), r.byEmail.server?.serverUs.toFixed(1) ?? '', r.byEmail.server?.readsPerCall.toFixed(3) ?? ''].join(','));
+const csv = [['db', 'rep', 'type', 'n', 'bulk_rows_per_sec', 'insert_p50_us', 'insert_p95_us', 'insert_p99_us', 'insert_server_us', 'insert_reads_per_call', 'table_bytes', 'index_bytes',
+	'uniform_p50_us', 'uniform_p99_us', 'uniform_server_us', 'uniform_reads_per_call',
+	'recent_p50_us', 'recent_p99_us', 'recent_server_us', 'recent_reads_per_call', 'misses'].join(',')];
+const f1 = (x) => (x == null ? '' : x.toFixed(1));
+const f3 = (x) => (x == null ? '' : x.toFixed(3));
+for (const run of runs) {
+	for (const [type, points] of Object.entries(run.types)) {
+		for (const p of points) {
+			csv.push([run.db, run.rep, type, p.n, p.bulk.rowsPerSec ?? '', f1(p.single.p50us), f1(p.single.p95us), f1(p.single.p99us), f1(p.single.server?.serverUs), f3(p.single.server?.readsPerCall),
+				p.size.tableBytes, p.size.indexBytes,
+				f1(p.uniform.p50us), f1(p.uniform.p99us), f1(p.uniform.server?.serverUs), f3(p.uniform.server?.readsPerCall),
+				f1(p.recent.p50us), f1(p.recent.p99us), f1(p.recent.server?.serverUs), f3(p.recent.server?.readsPerCall),
+				p.uniform.misses + p.recent.misses].join(','));
+		}
 	}
 }
 writeFileSync(`${dir}/summary.csv`, csv.join('\n') + '\n');
-console.log(`wrote ${dir}/REPORT.md and ${dir}/summary.csv`);
+
+// ---------------------------------------------------------------- html
+
+const TYPES = Object.fromEntries(Object.entries(ID_TYPES).map(([k, v]) => [k, { label: v.label, sorted: v.sorted, kind: v.kind }]));
+const payload = { run: dir.split('/').at(-1), metrics: METRICS.map(({ get, ...m }) => m), data, meta, types: TYPES };
+const html = readFileSync(new URL('./report-template.html', import.meta.url), 'utf8')
+	.replace('/*__DATA__*/null', JSON.stringify(payload).replace(/</g, '\\u003c'));
+writeFileSync(`${dir}/report.html`, html);
+console.log(`wrote ${dir}/summary.csv and ${dir}/report.html (${files.length} run files)`);
