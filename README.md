@@ -10,7 +10,7 @@ users 테이블의 PK로 썼을 때 **한 건 삽입 · ID 조회 · 용량**이
 
 호스트에는 **Docker만** 있으면 됩니다. Node.js와 라이브러리는 전부 컨테이너 안에서 돌아갑니다.
 CPU 고정과 I/O 제한이 실제 하드웨어에 걸리도록 **네이티브 Docker Engine**(`docker context use default`)에서 돌리세요.
-Docker Desktop은 켜질 때 현재 컨텍스트를 자기 VM으로 되돌려요. 그래서 실행 전에 `docker context show`가 `default`인지 확인하세요. Docker Desktop이면 `bench.sh`가 시작할 때 경고를 띄워요.
+Docker Desktop은 켜질 때 현재 컨텍스트를 자기 VM으로 되돌려요. 그래서 `bench.sh`는 네이티브 소켓(`/var/run/docker.sock`)이 있으면 현재 컨텍스트와 상관없이 `DOCKER_CONTEXT=default`로 돌아요. 그래도 Docker Desktop에서 돌게 되면 시작할 때 경고를 띄워요.
 기본값은 개발 PC(Ryzen 9 7950X, `/dev/nvme1n1`)에 맞춰져 있어요. 다른 PC에서는 `DB_CPUS`, `RUNNER_CPUS`를 바꿔 주세요.
 
 ```bash

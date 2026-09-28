@@ -12,6 +12,13 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Use the native engine whenever it is installed, whatever the current context is:
+# Docker Desktop switches the context to its VM every time it starts. DOCKER_CONTEXT=...
+# on the command line still wins.
+if [[ -z ${DOCKER_CONTEXT:-} && -z ${DOCKER_HOST:-} && -S /var/run/docker.sock ]]; then
+  export DOCKER_CONTEXT=default
+fi
+
 export RUN_ID=${RUN_ID:-$(date -u +%Y-%m-%dT%H-%M-%SZ)}
 DBS=${DBS:-"postgres"}
 REPS=${REPS:-"1"}
