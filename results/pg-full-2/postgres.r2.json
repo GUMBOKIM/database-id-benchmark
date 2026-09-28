@@ -1,0 +1,2861 @@
+{
+  "db": "postgres",
+  "rep": 2,
+  "env": {
+    "version": "PostgreSQL 18.6 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "cache": "128MB"
+  },
+  "config": {
+    "types": [
+      "autoinc",
+      "snowflake",
+      "uuidv4",
+      "uuidv7",
+      "ulid",
+      "nanoid",
+      "cuid2"
+    ],
+    "nMin": 1000,
+    "nMax": 10000000,
+    "pointsPerDecade": 10,
+    "checkpoints": [
+      1000,
+      1260,
+      1580,
+      2000,
+      2510,
+      3160,
+      3980,
+      5010,
+      6310,
+      7940,
+      10000,
+      12600,
+      15800,
+      20000,
+      25100,
+      31600,
+      39800,
+      50100,
+      63100,
+      79400,
+      100000,
+      126000,
+      158000,
+      200000,
+      251000,
+      316000,
+      398000,
+      501000,
+      631000,
+      794000,
+      1000000,
+      1260000,
+      1580000,
+      2000000,
+      2510000,
+      3160000,
+      3980000,
+      5010000,
+      6310000,
+      7940000,
+      10000000
+    ],
+    "batch": 1000,
+    "singleW": 1000,
+    "readN": 5000,
+    "readWarmup": 500,
+    "recentFrac": 0.1,
+    "recentShare": 0.9,
+    "coldW": 200,
+    "coldReadN": 1000,
+    "concWorkers": 16,
+    "concRows": 8000,
+    "concMinN": 100000,
+    "simDays": 365
+  },
+  "generation": {
+    "snowflake": {
+      "n": 10000000,
+      "nsPerId": 240.587356,
+      "clock": "365d@1735689600000"
+    },
+    "uuidv1": {
+      "n": 10000000,
+      "nsPerId": 2524.940868
+    },
+    "uuidv3": {
+      "n": 2000,
+      "nsPerId": 7592.5315
+    },
+    "uuidv4": {
+      "n": 10000000,
+      "nsPerId": 821.8804753
+    },
+    "uuidv5": {
+      "n": 2000,
+      "nsPerId": 3371.9525
+    },
+    "uuidv6": {
+      "n": 10000000,
+      "nsPerId": 2829.0245017
+    },
+    "uuidv7": {
+      "n": 10000000,
+      "nsPerId": 2288.1692275,
+      "clock": "365d@1735689600000"
+    },
+    "uuidv4_str": {
+      "n": 10000000,
+      "nsPerId": 813.7705192
+    },
+    "ulid": {
+      "n": 10000000,
+      "nsPerId": 32668.5666506,
+      "clock": "365d@1735689600000"
+    },
+    "cuid": {
+      "n": 2000,
+      "nsPerId": 5056.716
+    },
+    "cuid2": {
+      "n": 10000000,
+      "nsPerId": 130963.3872495
+    },
+    "nanoid": {
+      "n": 10000000,
+      "nsPerId": 271.1347482
+    },
+    "objectid": {
+      "n": 10000000,
+      "nsPerId": 536.2205195
+    },
+    "ksuid": {
+      "n": 2000,
+      "nsPerId": 8605.477
+    },
+    "xid": {
+      "n": 2000,
+      "nsPerId": 1570.3445
+    },
+    "typeid": {
+      "n": 10000000,
+      "nsPerId": 2018.046996
+    }
+  },
+  "calibration": {
+    "before": 235
+  },
+  "types": {
+    "snowflake": [
+      {
+        "n": 1000,
+        "bulk": {
+          "rows": 0,
+          "seconds": 0.000019579,
+          "rowsPerSec": null,
+          "wal": null
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 3054.311,
+          "p95us": 4474.827,
+          "p99us": 6568.081,
+          "maxus": 9452.793,
+          "server": {
+            "serverUs": 20.253164999999978,
+            "readsPerCall": 0.003,
+            "hitsPerCall": 6.173
+          },
+          "wal": {
+            "bytesPerRow": 499.184,
+            "fpiPerRow": 0.001,
+            "recordsPerRow": 5.019
+          }
+        },
+        "size": {
+          "tableBytes": 212992,
+          "indexBytes": 172032
+        },
+        "index": {
+          "treeLevel": 1,
+          "leafPages": 3,
+          "avgLeafDensity": 81.94,
+          "leafFragmentation": 0
+        },
+        "uniform": {
+          "qps": 12225,
+          "count": 5000,
+          "p50us": 75.2,
+          "p95us": 112.579,
+          "p99us": 142.46,
+          "maxus": 3978.618,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.219686000000037,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 12959,
+          "count": 5000,
+          "p50us": 71.28,
+          "p95us": 106.31,
+          "p99us": 130.75,
+          "maxus": 5335.335,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.858520600000018,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "cold": {
+          "osCacheDropped": true,
+          "single": {
+            "count": 200,
+            "p50us": 1743.425,
+            "p95us": 3072.961,
+            "p99us": 3550.48,
+            "maxus": 3745.139,
+            "server": {
+              "serverUs": 27.767634999999988,
+              "readsPerCall": 0.095,
+              "hitsPerCall": 6.97
+            },
+            "wal": {
+              "bytesPerRow": 502.84,
+              "fpiPerRow": 0,
+              "recordsPerRow": 5.015
+            }
+          },
+          "uniform": {
+            "qps": 11234,
+            "count": 1000,
+            "p50us": 74.869,
+            "p95us": 121.679,
+            "p99us": 183.779,
+            "maxus": 5614.003,
+            "misses": 0,
+            "server": {
+              "serverUs": 14.328416999999996,
+              "readsPerCall": 0.026,
+              "hitsPerCall": 2.974
+            }
+          },
+          "recent": {
+            "qps": 13413,
+            "count": 1000,
+            "p50us": 66.34,
+            "p95us": 113.76,
+            "p99us": 164.02,
+            "maxus": 499.738,
+            "misses": 0,
+            "server": {
+              "serverUs": 12.982997,
+              "readsPerCall": 0.026,
+              "hitsPerCall": 2.974
+            }
+          }
+        }
+      },
+      {
+        "n": 1260,
+        "bulk": {
+          "rows": 0,
+          "seconds": 0.00000156,
+          "rowsPerSec": null,
+          "wal": null
+        },
+        "single": {
+          "count": 60,
+          "p50us": 1730.615,
+          "p95us": 3223.44,
+          "p99us": 3409.38,
+          "maxus": 3409.38,
+          "server": {
+            "serverUs": 25.52935,
+            "readsPerCall": 0.3333333333333333,
+            "hitsPerCall": 6.7
+          },
+          "wal": {
+            "bytesPerRow": 461.3333333333333,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5
+          }
+        },
+        "size": {
+          "tableBytes": 253952,
+          "indexBytes": 196608
+        },
+        "uniform": {
+          "qps": 14272,
+          "count": 5000,
+          "p50us": 64.019,
+          "p95us": 96.96,
+          "p99us": 121.19,
+          "maxus": 3220.021,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.71161459999999,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 14858,
+          "count": 5000,
+          "p50us": 63.369,
+          "p95us": 84.379,
+          "p99us": 104.64,
+          "maxus": 3874.769,
+          "misses": 0,
+          "server": {
+            "serverUs": 10.850853200000014,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 1580,
+        "bulk": {
+          "rows": 0,
+          "seconds": 0.000001579,
+          "rowsPerSec": null,
+          "wal": null
+        },
+        "single": {
+          "count": 320,
+          "p50us": 1797.425,
+          "p95us": 3242.871,
+          "p99us": 4082.478,
+          "maxus": 6627.341,
+          "server": {
+            "serverUs": 21.54587499999999,
+            "readsPerCall": 0,
+            "hitsPerCall": 7.071875
+          },
+          "wal": {
+            "bytesPerRow": 510.875,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.015625
+          }
+        },
+        "size": {
+          "tableBytes": 311296,
+          "indexBytes": 237568
+        },
+        "uniform": {
+          "qps": 14372,
+          "count": 5000,
+          "p50us": 65.39,
+          "p95us": 91.67,
+          "p99us": 115.339,
+          "maxus": 2100.043,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.687012399999995,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 14492,
+          "count": 5000,
+          "p50us": 64.69,
+          "p95us": 92.57,
+          "p99us": 114.61,
+          "maxus": 2637.863,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.227760599999975,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 2000,
+        "bulk": {
+          "rows": 0,
+          "seconds": 0.0000026,
+          "rowsPerSec": null,
+          "wal": null
+        },
+        "single": {
+          "count": 420,
+          "p50us": 1773.625,
+          "p95us": 3212.441,
+          "p99us": 3738.169,
+          "maxus": 7165.92,
+          "server": {
+            "serverUs": 20.522919047619048,
+            "readsPerCall": 0,
+            "hitsPerCall": 7.078571428571428
+          },
+          "wal": {
+            "bytesPerRow": 528.6476190476191,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.019047619047619
+          }
+        },
+        "size": {
+          "tableBytes": 385024,
+          "indexBytes": 303104
+        },
+        "uniform": {
+          "qps": 15372,
+          "count": 5000,
+          "p50us": 60.68,
+          "p95us": 79.809,
+          "p99us": 90.249,
+          "maxus": 2155.843,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.070959399999984,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 15054,
+          "count": 5000,
+          "p50us": 60.9,
+          "p95us": 84.32,
+          "p99us": 119.02,
+          "maxus": 2087.415,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.099711199999986,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 2510,
+        "bulk": {
+          "rows": 0,
+          "seconds": 0.00000177,
+          "rowsPerSec": null,
+          "wal": null
+        },
+        "single": {
+          "count": 510,
+          "p50us": 1744.765,
+          "p95us": 3183.981,
+          "p99us": 3481.61,
+          "maxus": 3715.909,
+          "server": {
+            "serverUs": 19.10544509803922,
+            "readsPerCall": 0,
+            "hitsPerCall": 7.050980392156863
+          },
+          "wal": {
+            "bytesPerRow": 474.0549019607843,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.007843137254902
+          }
+        },
+        "size": {
+          "tableBytes": 475136,
+          "indexBytes": 327680
+        },
+        "uniform": {
+          "qps": 15217,
+          "count": 5000,
+          "p50us": 60.5,
+          "p95us": 82.34,
+          "p99us": 104.039,
+          "maxus": 2926.521,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.227224200000025,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 15075,
+          "count": 5000,
+          "p50us": 61.091,
+          "p95us": 82.9,
+          "p99us": 103.689,
+          "maxus": 2692.002,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.104098599999986,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 3160,
+        "bulk": {
+          "rows": 0,
+          "seconds": 0.00000154,
+          "rowsPerSec": null,
+          "wal": null
+        },
+        "single": {
+          "count": 650,
+          "p50us": 1719.665,
+          "p95us": 3148.191,
+          "p99us": 5108.826,
+          "maxus": 8160.356,
+          "server": {
+            "serverUs": 16.907693846153848,
+            "readsPerCall": 0,
+            "hitsPerCall": 7.078461538461538
+          },
+          "wal": {
+            "bytesPerRow": 523.1261538461539,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.02
+          }
+        },
+        "size": {
+          "tableBytes": 589824,
+          "indexBytes": 434176
+        },
+        "uniform": {
+          "qps": 14722,
+          "count": 5000,
+          "p50us": 62.28,
+          "p95us": 89.07,
+          "p99us": 111.9,
+          "maxus": 3689.159,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.489685799999984,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 15293,
+          "count": 5000,
+          "p50us": 60.31,
+          "p95us": 83.1,
+          "p99us": 99.709,
+          "maxus": 2373.543,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.01833759999999,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 3980,
+        "bulk": {
+          "rows": 0,
+          "seconds": 0.00000195,
+          "rowsPerSec": null,
+          "wal": null
+        },
+        "single": {
+          "count": 820,
+          "p50us": 1750.355,
+          "p95us": 3168.18,
+          "p99us": 3431.041,
+          "maxus": 6548.192,
+          "server": {
+            "serverUs": 20.63092926829267,
+            "readsPerCall": 0,
+            "hitsPerCall": 7.078048780487805
+          },
+          "wal": {
+            "bytesPerRow": 525.9512195121952,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.0182926829268295
+          }
+        },
+        "size": {
+          "tableBytes": 737280,
+          "indexBytes": 557056
+        },
+        "uniform": {
+          "qps": 11295,
+          "count": 5000,
+          "p50us": 62.52,
+          "p95us": 249.79,
+          "p99us": 362.98,
+          "maxus": 7363.499,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.100714400000003,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 15113,
+          "count": 5000,
+          "p50us": 60.48,
+          "p95us": 88.29,
+          "p99us": 104.27,
+          "maxus": 2339.982,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.284776599999983,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 5010,
+        "bulk": {
+          "rows": 30,
+          "seconds": 0.007578479,
+          "rowsPerSec": 3959,
+          "wal": {
+            "bytesPerRow": 551.2,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.066666666666666
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1713.715,
+          "p95us": 3151.331,
+          "p99us": 3597.08,
+          "maxus": 7653.468,
+          "server": {
+            "serverUs": 17.589019999999998,
+            "readsPerCall": 0,
+            "hitsPerCall": 7.049
+          },
+          "wal": {
+            "bytesPerRow": 473.136,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.005
+          }
+        },
+        "size": {
+          "tableBytes": 917504,
+          "indexBytes": 606208
+        },
+        "uniform": {
+          "qps": 13240,
+          "count": 5000,
+          "p50us": 66.659,
+          "p95us": 112.46,
+          "p99us": 144.7,
+          "maxus": 3391.85,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.479892399999992,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 14794,
+          "count": 5000,
+          "p50us": 61.46,
+          "p95us": 89.219,
+          "p99us": 110.69,
+          "maxus": 4010.279,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.155462399999971,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 6310,
+        "bulk": {
+          "rows": 300,
+          "seconds": 0.007728478,
+          "rowsPerSec": 38817,
+          "wal": {
+            "bytesPerRow": 572.64,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.046666666666667
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1770.294,
+          "p95us": 3165.801,
+          "p99us": 3643.76,
+          "maxus": 6693.921,
+          "server": {
+            "serverUs": 20.04204300000002,
+            "readsPerCall": 0,
+            "hitsPerCall": 7.061
+          },
+          "wal": {
+            "bytesPerRow": 494.752,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.011
+          }
+        },
+        "size": {
+          "tableBytes": 1146880,
+          "indexBytes": 802816
+        },
+        "uniform": {
+          "qps": 14689,
+          "count": 5000,
+          "p50us": 62.66,
+          "p95us": 89.45,
+          "p99us": 109.669,
+          "maxus": 3587.18,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.761050999999984,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 15010,
+          "count": 5000,
+          "p50us": 60.97,
+          "p95us": 88.219,
+          "p99us": 108.2,
+          "maxus": 1467.366,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.435641399999987,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 7940,
+        "bulk": {
+          "rows": 630,
+          "seconds": 0.015200847,
+          "rowsPerSec": 41445,
+          "wal": {
+            "bytesPerRow": 516.9269841269842,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.026984126984127
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1810.564,
+          "p95us": 3231.501,
+          "p99us": 4266.768,
+          "maxus": 23934.192,
+          "server": {
+            "serverUs": 24.380531000000012,
+            "readsPerCall": 0,
+            "hitsPerCall": 7.063
+          },
+          "wal": {
+            "bytesPerRow": 499.84,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.012
+          }
+        },
+        "size": {
+          "tableBytes": 1433600,
+          "indexBytes": 1032192
+        },
+        "uniform": {
+          "qps": 13599,
+          "count": 5000,
+          "p50us": 69.25,
+          "p95us": 102.839,
+          "p99us": 122.849,
+          "maxus": 2052.975,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.804524399999996,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 15083,
+          "count": 5000,
+          "p50us": 60.869,
+          "p95us": 86.199,
+          "p99us": 113.24,
+          "maxus": 1558.275,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.51689339999999,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 10000,
+        "bulk": {
+          "rows": 1060,
+          "seconds": 0.026461744,
+          "rowsPerSec": 40058,
+          "wal": {
+            "bytesPerRow": 453.99245283018865,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.0122641509433965
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1748.075,
+          "p95us": 3173.131,
+          "p99us": 3640.84,
+          "maxus": 7641.198,
+          "server": {
+            "serverUs": 21.827838999999987,
+            "readsPerCall": 0,
+            "hitsPerCall": 7.114
+          },
+          "wal": {
+            "bytesPerRow": 705.704,
+            "fpiPerRow": 0.026,
+            "recordsPerRow": 5.357
+          }
+        },
+        "size": {
+          "tableBytes": 1810432,
+          "indexBytes": 1146880
+        },
+        "index": {
+          "treeLevel": 1,
+          "leafPages": 28,
+          "avgLeafDensity": 87.86,
+          "leafFragmentation": 0
+        },
+        "uniform": {
+          "qps": 13946,
+          "count": 5000,
+          "p50us": 64.629,
+          "p95us": 98.109,
+          "p99us": 125.909,
+          "maxus": 2173.654,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.384387999999992,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 14126,
+          "count": 5000,
+          "p50us": 63.179,
+          "p95us": 100.47,
+          "p99us": 133.709,
+          "maxus": 1642.165,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.164073200000002,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "cold": {
+          "osCacheDropped": true,
+          "single": {
+            "count": 200,
+            "p50us": 2241.763,
+            "p95us": 3193.621,
+            "p99us": 3846.619,
+            "maxus": 3865.92,
+            "server": {
+              "serverUs": 56.03806000000003,
+              "readsPerCall": 0.565,
+              "hitsPerCall": 6.595
+            },
+            "wal": {
+              "bytesPerRow": 690.36,
+              "fpiPerRow": 0,
+              "recordsPerRow": 5.06
+            }
+          },
+          "uniform": {
+            "qps": 11647,
+            "count": 1000,
+            "p50us": 70.31,
+            "p95us": 157.569,
+            "p99us": 218.858,
+            "maxus": 457.749,
+            "misses": 0,
+            "server": {
+              "serverUs": 24.18891099999999,
+              "readsPerCall": 0.242,
+              "hitsPerCall": 2.758
+            }
+          },
+          "recent": {
+            "qps": 13739,
+            "count": 1000,
+            "p50us": 62.07,
+            "p95us": 129.94,
+            "p99us": 183.229,
+            "maxus": 379.919,
+            "misses": 0,
+            "server": {
+              "serverUs": 17.756612000000015,
+              "readsPerCall": 0.129,
+              "hitsPerCall": 2.871
+            }
+          }
+        }
+      },
+      {
+        "n": 12600,
+        "bulk": {
+          "rows": 1400,
+          "seconds": 0.036938604,
+          "rowsPerSec": 37901,
+          "wal": {
+            "bytesPerRow": 503.9371428571429,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.023571428571429
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 2253.822,
+          "p95us": 3202.73,
+          "p99us": 3506.56,
+          "maxus": 8331.735,
+          "server": {
+            "serverUs": 20.572472000000015,
+            "readsPerCall": 0,
+            "hitsPerCall": 7.049
+          },
+          "wal": {
+            "bytesPerRow": 476.984,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.004
+          }
+        },
+        "size": {
+          "tableBytes": 2277376,
+          "indexBytes": 1531904
+        },
+        "uniform": {
+          "qps": 14036,
+          "count": 5000,
+          "p50us": 66.52,
+          "p95us": 96.2,
+          "p99us": 127.57,
+          "maxus": 2827.192,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.325915599999998,
+            "readsPerCall": 0.0036,
+            "hitsPerCall": 2.9964
+          }
+        },
+        "recent": {
+          "qps": 14995,
+          "count": 5000,
+          "p50us": 61.119,
+          "p95us": 89.279,
+          "p99us": 110.52,
+          "maxus": 1807.185,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.413006399999999,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 15800,
+        "bulk": {
+          "rows": 2200,
+          "seconds": 0.052050119,
+          "rowsPerSec": 42267,
+          "wal": {
+            "bytesPerRow": 517.4254545454545,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.025909090909091
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1697.505,
+          "p95us": 2809.621,
+          "p99us": 3334.711,
+          "maxus": 6507.061,
+          "server": {
+            "serverUs": 20.11956299999999,
+            "readsPerCall": 0,
+            "hitsPerCall": 7.079
+          },
+          "wal": {
+            "bytesPerRow": 534.664,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.019
+          }
+        },
+        "size": {
+          "tableBytes": 2859008,
+          "indexBytes": 2129920
+        },
+        "uniform": {
+          "qps": 14634,
+          "count": 5000,
+          "p50us": 65.31,
+          "p95us": 87.849,
+          "p99us": 106.51,
+          "maxus": 4680.716,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.97781479999999,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 14857,
+          "count": 5000,
+          "p50us": 62.04,
+          "p95us": 89,
+          "p99us": 110.259,
+          "maxus": 1624.255,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.771327999999986,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 20000,
+        "bulk": {
+          "rows": 3200,
+          "seconds": 0.077557887,
+          "rowsPerSec": 41260,
+          "wal": {
+            "bytesPerRow": 437.745,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.005
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1688.515,
+          "p95us": 1892.174,
+          "p99us": 2508.122,
+          "maxus": 4274.668,
+          "server": {
+            "serverUs": 20.688557000000024,
+            "readsPerCall": 0,
+            "hitsPerCall": 7.059
+          },
+          "wal": {
+            "bytesPerRow": 496.12,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.009
+          }
+        },
+        "size": {
+          "tableBytes": 3620864,
+          "indexBytes": 2301952
+        },
+        "uniform": {
+          "qps": 14238,
+          "count": 5000,
+          "p50us": 66.04,
+          "p95us": 93.73,
+          "p99us": 112.91,
+          "maxus": 1924.185,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.669113999999993,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 14802,
+          "count": 5000,
+          "p50us": 62.23,
+          "p95us": 89.51,
+          "p99us": 109.009,
+          "maxus": 1647.536,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.807042199999977,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 25100,
+        "bulk": {
+          "rows": 4100,
+          "seconds": 0.107223989,
+          "rowsPerSec": 38238,
+          "wal": {
+            "bytesPerRow": 496.5619512195122,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.021463414634146
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1691.375,
+          "p95us": 1982.524,
+          "p99us": 2779.782,
+          "maxus": 6458.911,
+          "server": {
+            "serverUs": 21.489948999999978,
+            "readsPerCall": 0,
+            "hitsPerCall": 7.049
+          },
+          "wal": {
+            "bytesPerRow": 473.376,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.003
+          }
+        },
+        "size": {
+          "tableBytes": 4546560,
+          "indexBytes": 3006464
+        },
+        "uniform": {
+          "qps": 13867,
+          "count": 5000,
+          "p50us": 67.6,
+          "p95us": 92.7,
+          "p99us": 117.48,
+          "maxus": 4166.278,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.840872799999998,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 14931,
+          "count": 5000,
+          "p50us": 61.76,
+          "p95us": 86.491,
+          "p99us": 103.939,
+          "maxus": 1652.225,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.68032359999997,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 31600,
+        "bulk": {
+          "rows": 5500,
+          "seconds": 0.13124424,
+          "rowsPerSec": 41907,
+          "wal": {
+            "bytesPerRow": 524.4349090909091,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.027636363636364
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1698.446,
+          "p95us": 1972.404,
+          "p99us": 3393.76,
+          "maxus": 6810.14,
+          "server": {
+            "serverUs": 21.573230000000017,
+            "readsPerCall": 0,
+            "hitsPerCall": 8.048
+          },
+          "wal": {
+            "bytesPerRow": 473.384,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.003
+          }
+        },
+        "size": {
+          "tableBytes": 5718016,
+          "indexBytes": 4235264
+        },
+        "uniform": {
+          "qps": 14067,
+          "count": 5000,
+          "p50us": 66.27,
+          "p95us": 94.139,
+          "p99us": 119,
+          "maxus": 3498.03,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.717040799999964,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 14102,
+          "count": 5000,
+          "p50us": 66.07,
+          "p95us": 97.019,
+          "p99us": 126.1,
+          "maxus": 1559.746,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.449484599999996,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 39800,
+        "bulk": {
+          "rows": 7200,
+          "seconds": 0.170658267,
+          "rowsPerSec": 42190,
+          "wal": {
+            "bytesPerRow": 441.63666666666666,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.006111111111111
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1703.785,
+          "p95us": 2356.843,
+          "p99us": 3368.401,
+          "maxus": 5726.674,
+          "server": {
+            "serverUs": 23.84309199999998,
+            "readsPerCall": 0,
+            "hitsPerCall": 8.059
+          },
+          "wal": {
+            "bytesPerRow": 491.6,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.008
+          }
+        },
+        "size": {
+          "tableBytes": 7200768,
+          "indexBytes": 4587520
+        },
+        "uniform": {
+          "qps": 14607,
+          "count": 5000,
+          "p50us": 62.57,
+          "p95us": 91.67,
+          "p99us": 116.86,
+          "maxus": 1872.424,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.716705600000004,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 14935,
+          "count": 5000,
+          "p50us": 61.56,
+          "p95us": 87.59,
+          "p99us": 110.03,
+          "maxus": 1888.584,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.998025800000008,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 50100,
+        "bulk": {
+          "rows": 9300,
+          "seconds": 0.239824498,
+          "rowsPerSec": 38778,
+          "wal": {
+            "bytesPerRow": 489.1518279569892,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.019032258064516
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1667.176,
+          "p95us": 1862.174,
+          "p99us": 1978.973,
+          "maxus": 2152.554,
+          "server": {
+            "serverUs": 22.568883999999976,
+            "readsPerCall": 0,
+            "hitsPerCall": 8.053
+          },
+          "wal": {
+            "bytesPerRow": 486.32,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.005
+          }
+        },
+        "size": {
+          "tableBytes": 9068544,
+          "indexBytes": 5996544
+        },
+        "uniform": {
+          "qps": 14673,
+          "count": 5000,
+          "p50us": 62.75,
+          "p95us": 86.189,
+          "p99us": 104.839,
+          "maxus": 4478.307,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.871871000000011,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 14600,
+          "count": 5000,
+          "p50us": 63.879,
+          "p95us": 88.25,
+          "p99us": 109.53,
+          "maxus": 1795.565,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.512877600000008,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 63100,
+        "bulk": {
+          "rows": 12000,
+          "seconds": 0.284908167,
+          "rowsPerSec": 42119,
+          "wal": {
+            "bytesPerRow": 518.3293333333334,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.02525
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1710.946,
+          "p95us": 3000.142,
+          "p99us": 3570.109,
+          "maxus": 6518.361,
+          "server": {
+            "serverUs": 21.134509999999988,
+            "readsPerCall": 0,
+            "hitsPerCall": 9.049
+          },
+          "wal": {
+            "bytesPerRow": 475.512,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.004
+          }
+        },
+        "size": {
+          "tableBytes": 11436032,
+          "indexBytes": 8413184
+        },
+        "uniform": {
+          "qps": 10311,
+          "count": 5000,
+          "p50us": 63.62,
+          "p95us": 111.55,
+          "p99us": 379.159,
+          "maxus": 10868.328,
+          "misses": 0,
+          "server": {
+            "serverUs": 13.161815000000034,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 15018,
+          "count": 5000,
+          "p50us": 61.51,
+          "p95us": 84.1,
+          "p99us": 117.739,
+          "maxus": 2615.162,
+          "misses": 0,
+          "server": {
+            "serverUs": 11.952077400000002,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 79400,
+        "bulk": {
+          "rows": 15300,
+          "seconds": 0.389989203,
+          "rowsPerSec": 39232,
+          "wal": {
+            "bytesPerRow": 444.0062745098039,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.006078431372549
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1694.976,
+          "p95us": 1932.806,
+          "p99us": 3070.271,
+          "maxus": 3658.189,
+          "server": {
+            "serverUs": 20.729050999999984,
+            "readsPerCall": 0,
+            "hitsPerCall": 9.068
+          },
+          "wal": {
+            "bytesPerRow": 511.168,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.012
+          }
+        },
+        "size": {
+          "tableBytes": 14401536,
+          "indexBytes": 9142272
+        },
+        "uniform": {
+          "qps": 13954,
+          "count": 5000,
+          "p50us": 66.71,
+          "p95us": 96.57,
+          "p99us": 123.519,
+          "maxus": 4576.647,
+          "misses": 0,
+          "server": {
+            "serverUs": 13.253218400000039,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 14714,
+          "count": 5000,
+          "p50us": 61.939,
+          "p95us": 85.97,
+          "p99us": 115.43,
+          "maxus": 2222.654,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.057761000000012,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        }
+      },
+      {
+        "n": 100000,
+        "bulk": {
+          "rows": 11600,
+          "seconds": 0.284322969,
+          "rowsPerSec": 40799,
+          "wal": {
+            "bytesPerRow": 515.2717241379311,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.025689655172414
+          }
+        },
+        "concurrent": {
+          "workers": 16,
+          "rows": 8000,
+          "rowsPerSec": 5520,
+          "count": 8000,
+          "p50us": 2865.142,
+          "p95us": 3063.871,
+          "p99us": 3357.61,
+          "maxus": 8263.385,
+          "wal": {
+            "bytesPerRow": 490.53,
+            "fpiPerRow": 0,
+            "recordsPerRow": 3.569625
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1734.055,
+          "p95us": 2824.091,
+          "p99us": 3344.791,
+          "maxus": 6767.761,
+          "server": {
+            "serverUs": 27.47087399999999,
+            "readsPerCall": 0,
+            "hitsPerCall": 9.065
+          },
+          "wal": {
+            "bytesPerRow": 498.856,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.009
+          }
+        },
+        "size": {
+          "tableBytes": 18210816,
+          "indexBytes": 12009472
+        },
+        "index": {
+          "treeLevel": 1,
+          "leafPages": 274,
+          "avgLeafDensity": 89.78,
+          "leafFragmentation": 0
+        },
+        "uniform": {
+          "qps": 13867,
+          "count": 5000,
+          "p50us": 66.629,
+          "p95us": 97.819,
+          "p99us": 120.95,
+          "maxus": 4533.966,
+          "misses": 0,
+          "server": {
+            "serverUs": 13.240035200000028,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "recent": {
+          "qps": 14031,
+          "count": 5000,
+          "p50us": 66.85,
+          "p95us": 94.89,
+          "p99us": 123.99,
+          "maxus": 1894.364,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.862461199999998,
+            "readsPerCall": 0,
+            "hitsPerCall": 3
+          }
+        },
+        "cold": {
+          "osCacheDropped": true,
+          "single": {
+            "count": 200,
+            "p50us": 1945.925,
+            "p95us": 3313.55,
+            "p99us": 3635.45,
+            "maxus": 4011.049,
+            "server": {
+              "serverUs": 145.64841,
+              "readsPerCall": 2.075,
+              "hitsPerCall": 6.975
+            },
+            "wal": {
+              "bytesPerRow": 492.6,
+              "fpiPerRow": 0,
+              "recordsPerRow": 5.005
+            }
+          },
+          "uniform": {
+            "qps": 6869,
+            "count": 1000,
+            "p50us": 141.929,
+            "p95us": 219.16,
+            "p99us": 284.89,
+            "maxus": 429.309,
+            "misses": 0,
+            "server": {
+              "serverUs": 71.37425999999999,
+              "readsPerCall": 1.08,
+              "hitsPerCall": 1.92
+            }
+          },
+          "recent": {
+            "qps": 10429,
+            "count": 1000,
+            "p50us": 75.48,
+            "p95us": 189.879,
+            "p99us": 228.09,
+            "maxus": 308.399,
+            "misses": 0,
+            "server": {
+              "serverUs": 32.565449000000015,
+              "readsPerCall": 0.415,
+              "hitsPerCall": 2.585
+            }
+          }
+        }
+      },
+      {
+        "n": 126000,
+        "bulk": {
+          "rows": 24800,
+          "seconds": 0.652253546,
+          "rowsPerSec": 38022,
+          "wal": {
+            "bytesPerRow": 514.7261290322581,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.024153225806452
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1712.565,
+          "p95us": 2755.272,
+          "p99us": 6785.07,
+          "maxus": 8134.526,
+          "server": {
+            "serverUs": 22.73274800000002,
+            "readsPerCall": 0,
+            "hitsPerCall": 9.049
+          },
+          "wal": {
+            "bytesPerRow": 475.672,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.003
+          }
+        },
+        "size": {
+          "tableBytes": 22937600,
+          "indexBytes": 16744448
+        },
+        "uniform": {
+          "qps": 13317,
+          "count": 5000,
+          "p50us": 70.891,
+          "p95us": 102.39,
+          "p99us": 125.329,
+          "maxus": 2035.284,
+          "misses": 0,
+          "server": {
+            "serverUs": 16.188670200000022,
+            "readsPerCall": 0.2696,
+            "hitsPerCall": 2.7304
+          }
+        },
+        "recent": {
+          "qps": 14852,
+          "count": 5000,
+          "p50us": 62.679,
+          "p95us": 86.629,
+          "p99us": 107.94,
+          "maxus": 1766.595,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.461641999999987,
+            "readsPerCall": 0.0098,
+            "hitsPerCall": 2.9902
+          }
+        }
+      },
+      {
+        "n": 158000,
+        "bulk": {
+          "rows": 31000,
+          "seconds": 0.77858262,
+          "rowsPerSec": 39816,
+          "wal": {
+            "bytesPerRow": 444.3950967741936,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.006064516129032
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1710.444,
+          "p95us": 2779.521,
+          "p99us": 3614.36,
+          "maxus": 8214.946,
+          "server": {
+            "serverUs": 22.033169,
+            "readsPerCall": 0,
+            "hitsPerCall": 8.09
+          },
+          "wal": {
+            "bytesPerRow": 519.52,
+            "fpiPerRow": 0,
+            "recordsPerRow": 9.609
+          }
+        },
+        "size": {
+          "tableBytes": 28770304,
+          "indexBytes": 18161664
+        },
+        "uniform": {
+          "qps": 13541,
+          "count": 5000,
+          "p50us": 68.22,
+          "p95us": 97.95,
+          "p99us": 130.07,
+          "maxus": 4828.657,
+          "misses": 0,
+          "server": {
+            "serverUs": 14.208764400000026,
+            "readsPerCall": 0.0312,
+            "hitsPerCall": 3.9688
+          }
+        },
+        "recent": {
+          "qps": 14831,
+          "count": 5000,
+          "p50us": 63.41,
+          "p95us": 83.08,
+          "p99us": 98.889,
+          "maxus": 1642.695,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.562775000000013,
+            "readsPerCall": 0.0006,
+            "hitsPerCall": 3.9994
+          }
+        }
+      },
+      {
+        "n": 200000,
+        "bulk": {
+          "rows": 41000,
+          "seconds": 1.044261733,
+          "rowsPerSec": 39262,
+          "wal": {
+            "bytesPerRow": 489.6140487804878,
+            "fpiPerRow": 0.000024390243902439026,
+            "recordsPerRow": 4.018512195121951
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1725.075,
+          "p95us": 2992.511,
+          "p99us": 3491.369,
+          "maxus": 3826.549,
+          "server": {
+            "serverUs": 23.238739000000013,
+            "readsPerCall": 0,
+            "hitsPerCall": 8.081
+          },
+          "wal": {
+            "bytesPerRow": 510.744,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.012
+          }
+        },
+        "size": {
+          "tableBytes": 36421632,
+          "indexBytes": 24133632
+        },
+        "uniform": {
+          "qps": 14640,
+          "count": 5000,
+          "p50us": 63.879,
+          "p95us": 85.059,
+          "p99us": 103.53,
+          "maxus": 1343.387,
+          "misses": 0,
+          "server": {
+            "serverUs": 13.183772200000027,
+            "readsPerCall": 0.0056,
+            "hitsPerCall": 3.9944
+          }
+        },
+        "recent": {
+          "qps": 14652,
+          "count": 5000,
+          "p50us": 63.65,
+          "p95us": 86.76,
+          "p99us": 111.26,
+          "maxus": 2339.953,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.348671999999997,
+            "readsPerCall": 0,
+            "hitsPerCall": 4
+          }
+        }
+      },
+      {
+        "n": 251000,
+        "bulk": {
+          "rows": 50000,
+          "seconds": 1.272307564,
+          "rowsPerSec": 39299,
+          "wal": {
+            "bytesPerRow": 512.91264,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.02366
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1712.224,
+          "p95us": 2963.392,
+          "p99us": 3555.47,
+          "maxus": 4160.308,
+          "server": {
+            "serverUs": 21.87740799999997,
+            "readsPerCall": 0,
+            "hitsPerCall": 8.063
+          },
+          "wal": {
+            "bytesPerRow": 475.688,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.003
+          }
+        },
+        "size": {
+          "tableBytes": 45703168,
+          "indexBytes": 33439744
+        },
+        "uniform": {
+          "qps": 14236,
+          "count": 5000,
+          "p50us": 66.14,
+          "p95us": 90.09,
+          "p99us": 115.24,
+          "maxus": 4057.279,
+          "misses": 0,
+          "server": {
+            "serverUs": 13.537795599999997,
+            "readsPerCall": 0.0016,
+            "hitsPerCall": 3.9984
+          }
+        },
+        "recent": {
+          "qps": 14337,
+          "count": 5000,
+          "p50us": 65.219,
+          "p95us": 89.909,
+          "p99us": 114.69,
+          "maxus": 1914.805,
+          "misses": 0,
+          "server": {
+            "serverUs": 13.513791800000009,
+            "readsPerCall": 0,
+            "hitsPerCall": 4
+          }
+        }
+      },
+      {
+        "n": 316000,
+        "bulk": {
+          "rows": 64000,
+          "seconds": 1.608273584,
+          "rowsPerSec": 39794,
+          "wal": {
+            "bytesPerRow": 445.06475,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.00628125
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1707.415,
+          "p95us": 2696.522,
+          "p99us": 3213.561,
+          "maxus": 6533.161,
+          "server": {
+            "serverUs": 23.149102999999982,
+            "readsPerCall": 0,
+            "hitsPerCall": 8.086
+          },
+          "wal": {
+            "bytesPerRow": 515.92,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.014
+          }
+        },
+        "size": {
+          "tableBytes": 57540608,
+          "indexBytes": 36315136
+        },
+        "uniform": {
+          "qps": 13553,
+          "count": 5000,
+          "p50us": 69.56,
+          "p95us": 95.25,
+          "p99us": 117.27,
+          "maxus": 1766.495,
+          "misses": 0,
+          "server": {
+            "serverUs": 13.965645599999972,
+            "readsPerCall": 0.0004,
+            "hitsPerCall": 3.9996
+          }
+        },
+        "recent": {
+          "qps": 13977,
+          "count": 5000,
+          "p50us": 68.15,
+          "p95us": 90.57,
+          "p99us": 106.249,
+          "maxus": 1696.595,
+          "misses": 0,
+          "server": {
+            "serverUs": 12.847365199999981,
+            "readsPerCall": 0,
+            "hitsPerCall": 4
+          }
+        }
+      },
+      {
+        "n": 398000,
+        "bulk": {
+          "rows": 81000,
+          "seconds": 2.064817574,
+          "rowsPerSec": 39229,
+          "wal": {
+            "bytesPerRow": 491.82034567901235,
+            "fpiPerRow": 0.000012345679012345678,
+            "recordsPerRow": 4.019061728395061
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1665.666,
+          "p95us": 1849.275,
+          "p99us": 2199.924,
+          "maxus": 2400.963,
+          "server": {
+            "serverUs": 23.058483000000038,
+            "readsPerCall": 0,
+            "hitsPerCall": 8.112
+          },
+          "wal": {
+            "bytesPerRow": 572.936,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.029
+          }
+        },
+        "size": {
+          "tableBytes": 72474624,
+          "indexBytes": 48521216
+        },
+        "uniform": {
+          "qps": 13964,
+          "count": 5000,
+          "p50us": 67.52,
+          "p95us": 94.319,
+          "p99us": 116.419,
+          "maxus": 2708.572,
+          "misses": 0,
+          "server": {
+            "serverUs": 13.922271599999993,
+            "readsPerCall": 0.0002,
+            "hitsPerCall": 3.9998
+          }
+        },
+        "recent": {
+          "qps": 14266,
+          "count": 5000,
+          "p50us": 65.78,
+          "p95us": 90.82,
+          "p99us": 107.79,
+          "maxus": 1596.936,
+          "misses": 0,
+          "server": {
+            "serverUs": 13.055653000000005,
+            "readsPerCall": 0,
+            "hitsPerCall": 4
+          }
+        }
+      },
+      {
+        "n": 501000,
+        "bulk": {
+          "rows": 102000,
+          "seconds": 2.64467291,
+          "rowsPerSec": 38568,
+          "wal": {
+            "bytesPerRow": 509.8361568627451,
+            "fpiPerRow": 0,
+            "recordsPerRow": 4.022872549019608
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1697.745,
+          "p95us": 2705.253,
+          "p99us": 3161.741,
+          "maxus": 6521.221,
+          "server": {
+            "serverUs": 19.856118999999964,
+            "readsPerCall": 0,
+            "hitsPerCall": 8.056
+          },
+          "wal": {
+            "bytesPerRow": 474.896,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.002
+          }
+        },
+        "size": {
+          "tableBytes": 91226112,
+          "indexBytes": 66813952
+        },
+        "uniform": {
+          "qps": 12752,
+          "count": 5000,
+          "p50us": 74.81,
+          "p95us": 102.57,
+          "p99us": 122.91,
+          "maxus": 2965.891,
+          "misses": 0,
+          "server": {
+            "serverUs": 16.960308200000085,
+            "readsPerCall": 0.3194,
+            "hitsPerCall": 3.6806
+          }
+        },
+        "recent": {
+          "qps": 13877,
+          "count": 5000,
+          "p50us": 67.491,
+          "p95us": 95.43,
+          "p99us": 122.45,
+          "maxus": 2819.382,
+          "misses": 0,
+          "server": {
+            "serverUs": 14.038133199999985,
+            "readsPerCall": 0.0308,
+            "hitsPerCall": 3.9692
+          }
+        }
+      },
+      {
+        "n": 631000,
+        "bulk": {
+          "rows": 129000,
+          "seconds": 3.386725926,
+          "rowsPerSec": 38090,
+          "wal": {
+            "bytesPerRow": 452.29327131782946,
+            "fpiPerRow": 0.000007751937984496124,
+            "recordsPerRow": 4.006589147286822
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1758.155,
+          "p95us": 3190.141,
+          "p99us": 3452.32,
+          "maxus": 5032.905,
+          "server": {
+            "serverUs": 25.46136199999998,
+            "readsPerCall": 0,
+            "hitsPerCall": 8.142
+          },
+          "wal": {
+            "bytesPerRow": 550.04,
+            "fpiPerRow": 0,
+            "recordsPerRow": 17.159
+          }
+        },
+        "size": {
+          "tableBytes": 114843648,
+          "indexBytes": 72843264
+        },
+        "uniform": {
+          "qps": 13095,
+          "count": 5000,
+          "p50us": 72.4,
+          "p95us": 99.96,
+          "p99us": 118.89,
+          "maxus": 4568.897,
+          "misses": 0,
+          "server": {
+            "serverUs": 17.97674480000005,
+            "readsPerCall": 0.492,
+            "hitsPerCall": 3.508
+          }
+        },
+        "recent": {
+          "qps": 14182,
+          "count": 5000,
+          "p50us": 66.359,
+          "p95us": 95.21,
+          "p99us": 117.31,
+          "maxus": 225,
+          "misses": 0,
+          "server": {
+            "serverUs": 14.309165799999947,
+            "readsPerCall": 0.0552,
+            "hitsPerCall": 3.9448
+          }
+        }
+      },
+      {
+        "n": 794000,
+        "bulk": {
+          "rows": 162000,
+          "seconds": 4.209777598,
+          "rowsPerSec": 38482,
+          "wal": {
+            "bytesPerRow": 491.6723950617284,
+            "fpiPerRow": 0.000006172839506172839,
+            "recordsPerRow": 4.019024691358025
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1693.645,
+          "p95us": 2055.124,
+          "p99us": 2837.342,
+          "maxus": 5153.195,
+          "server": {
+            "serverUs": 25.84843800000007,
+            "readsPerCall": 0,
+            "hitsPerCall": 8.094
+          },
+          "wal": {
+            "bytesPerRow": 538.056,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.019
+          }
+        },
+        "size": {
+          "tableBytes": 144523264,
+          "indexBytes": 96911360
+        },
+        "uniform": {
+          "qps": 12466,
+          "count": 5000,
+          "p50us": 77.42,
+          "p95us": 103.43,
+          "p99us": 133.79,
+          "maxus": 270.979,
+          "misses": 0,
+          "server": {
+            "serverUs": 22.194899600000003,
+            "readsPerCall": 0.9772,
+            "hitsPerCall": 3.0228
+          }
+        },
+        "recent": {
+          "qps": 14014,
+          "count": 5000,
+          "p50us": 67.52,
+          "p95us": 92.559,
+          "p99us": 117.24,
+          "maxus": 2008.555,
+          "misses": 0,
+          "server": {
+            "serverUs": 14.39298479999997,
+            "readsPerCall": 0.0924,
+            "hitsPerCall": 3.9076
+          }
+        }
+      },
+      {
+        "n": 1000000,
+        "bulk": {
+          "rows": 197000,
+          "seconds": 5.194786343,
+          "rowsPerSec": 37923,
+          "wal": {
+            "bytesPerRow": 512.6758984771574,
+            "fpiPerRow": 0.000005076142131979695,
+            "recordsPerRow": 4.02356345177665
+          }
+        },
+        "concurrent": {
+          "workers": 16,
+          "rows": 8000,
+          "rowsPerSec": 4824,
+          "count": 8000,
+          "p50us": 2928.802,
+          "p95us": 5123.835,
+          "p99us": 5772.043,
+          "maxus": 11525.856,
+          "wal": {
+            "bytesPerRow": 475.477,
+            "fpiPerRow": 0,
+            "recordsPerRow": 3.217875
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1775.534,
+          "p95us": 3199.21,
+          "p99us": 3505.089,
+          "maxus": 8400.995,
+          "server": {
+            "serverUs": 28.026173000000004,
+            "readsPerCall": 0,
+            "hitsPerCall": 8.074
+          },
+          "wal": {
+            "bytesPerRow": 489.984,
+            "fpiPerRow": 0.002,
+            "recordsPerRow": 5.064
+          }
+        },
+        "size": {
+          "tableBytes": 182059008,
+          "indexBytes": 133513216
+        },
+        "index": {
+          "treeLevel": 2,
+          "leafPages": 2733,
+          "avgLeafDensity": 90.01,
+          "leafFragmentation": 0
+        },
+        "uniform": {
+          "qps": 11757,
+          "count": 5000,
+          "p50us": 79.82,
+          "p95us": 111.669,
+          "p99us": 150.869,
+          "maxus": 4760.957,
+          "misses": 0,
+          "server": {
+            "serverUs": 24.970312200000006,
+            "readsPerCall": 1.3162,
+            "hitsPerCall": 2.6838
+          }
+        },
+        "recent": {
+          "qps": 13340,
+          "count": 5000,
+          "p50us": 70.769,
+          "p95us": 101.27,
+          "p99us": 134.879,
+          "maxus": 2073.084,
+          "misses": 0,
+          "server": {
+            "serverUs": 17.632480999999917,
+            "readsPerCall": 0.3298,
+            "hitsPerCall": 3.6702
+          }
+        },
+        "cold": {
+          "osCacheDropped": true,
+          "single": {
+            "count": 200,
+            "p50us": 2727.412,
+            "p95us": 3252.76,
+            "p99us": 3644.069,
+            "maxus": 8272.776,
+            "server": {
+              "serverUs": 150.82953,
+              "readsPerCall": 2.505,
+              "hitsPerCall": 5.55
+            },
+            "wal": {
+              "bytesPerRow": 473.32,
+              "fpiPerRow": 0,
+              "recordsPerRow": 5
+            }
+          },
+          "uniform": {
+            "qps": 5846,
+            "count": 1000,
+            "p50us": 168.28,
+            "p95us": 219.72,
+            "p99us": 248.17,
+            "maxus": 387.69,
+            "misses": 0,
+            "server": {
+              "serverUs": 100.9103909999999,
+              "readsPerCall": 1.836,
+              "hitsPerCall": 2.164
+            }
+          },
+          "recent": {
+            "qps": 7303,
+            "count": 1000,
+            "p50us": 126,
+            "p95us": 213.349,
+            "p99us": 282.85,
+            "maxus": 854.408,
+            "misses": 0,
+            "server": {
+              "serverUs": 71.49021000000003,
+              "readsPerCall": 1.219,
+              "hitsPerCall": 2.781
+            }
+          }
+        }
+      },
+      {
+        "n": 1260000,
+        "bulk": {
+          "rows": 258800,
+          "seconds": 6.956386843,
+          "rowsPerSec": 37203,
+          "wal": {
+            "bytesPerRow": 761.8932921174652,
+            "fpiPerRow": 0.05350463678516229,
+            "recordsPerRow": 4.061866306027821
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1701.905,
+          "p95us": 2013.945,
+          "p99us": 3323.081,
+          "maxus": 6565.621,
+          "server": {
+            "serverUs": 24.850904000000035,
+            "readsPerCall": 0,
+            "hitsPerCall": 8.08
+          },
+          "wal": {
+            "bytesPerRow": 508.584,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.013
+          }
+        },
+        "size": {
+          "tableBytes": 229400576,
+          "indexBytes": 145661952
+        },
+        "uniform": {
+          "qps": 10434,
+          "count": 5000,
+          "p50us": 91.25,
+          "p95us": 133.78,
+          "p99us": 179.611,
+          "maxus": 368.808,
+          "misses": 0,
+          "server": {
+            "serverUs": 32.67881279999999,
+            "readsPerCall": 1.3778,
+            "hitsPerCall": 2.6222
+          }
+        },
+        "recent": {
+          "qps": 13005,
+          "count": 5000,
+          "p50us": 71.96,
+          "p95us": 102.69,
+          "p99us": 124.16,
+          "maxus": 2614.502,
+          "misses": 0,
+          "server": {
+            "serverUs": 20.292769999999987,
+            "readsPerCall": 0.3866,
+            "hitsPerCall": 3.6134
+          }
+        }
+      },
+      {
+        "n": 1580000,
+        "bulk": {
+          "rows": 319000,
+          "seconds": 10.30820237,
+          "rowsPerSec": 30946,
+          "wal": {
+            "bytesPerRow": 492.94384952978055,
+            "fpiPerRow": 0.00019122257053291535,
+            "recordsPerRow": 4.0191003134796235
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1760.645,
+          "p95us": 3338.72,
+          "p99us": 6672.501,
+          "maxus": 9872.952,
+          "server": {
+            "serverUs": 32.39368900000002,
+            "readsPerCall": 0.482,
+            "hitsPerCall": 7.605
+          },
+          "wal": {
+            "bytesPerRow": 533.392,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.017
+          }
+        },
+        "size": {
+          "tableBytes": 287670272,
+          "indexBytes": 193085440
+        },
+        "uniform": {
+          "qps": 10302,
+          "count": 5000,
+          "p50us": 91.789,
+          "p95us": 127.32,
+          "p99us": 191.649,
+          "maxus": 3591.36,
+          "misses": 0,
+          "server": {
+            "serverUs": 33.840536599999986,
+            "readsPerCall": 1.4224,
+            "hitsPerCall": 2.5776
+          }
+        },
+        "recent": {
+          "qps": 12728,
+          "count": 5000,
+          "p50us": 73.619,
+          "p95us": 105.249,
+          "p99us": 137.75,
+          "maxus": 1966.455,
+          "misses": 0,
+          "server": {
+            "serverUs": 20.379204599999962,
+            "readsPerCall": 0.4362,
+            "hitsPerCall": 3.5638
+          }
+        }
+      },
+      {
+        "n": 2000000,
+        "bulk": {
+          "rows": 419000,
+          "seconds": 15.645698459,
+          "rowsPerSec": 26781,
+          "wal": {
+            "bytesPerRow": 780.7802195704057,
+            "fpiPerRow": 0.038422434367541766,
+            "recordsPerRow": 4.02254892601432
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1756.635,
+          "p95us": 2875.531,
+          "p99us": 3791.989,
+          "maxus": 7829.147,
+          "server": {
+            "serverUs": 34.71290099999997,
+            "readsPerCall": 1.124,
+            "hitsPerCall": 6.939
+          },
+          "wal": {
+            "bytesPerRow": 70239.648,
+            "fpiPerRow": 1.082,
+            "recordsPerRow": 5.003
+          }
+        },
+        "size": {
+          "tableBytes": 364142592,
+          "indexBytes": 267010048
+        },
+        "uniform": {
+          "qps": 10731,
+          "count": 5000,
+          "p50us": 88,
+          "p95us": 119.99,
+          "p99us": 155.948,
+          "maxus": 4676.706,
+          "misses": 0,
+          "server": {
+            "serverUs": 30.02609339999996,
+            "readsPerCall": 1.5184,
+            "hitsPerCall": 2.4816
+          }
+        },
+        "recent": {
+          "qps": 12308,
+          "count": 5000,
+          "p50us": 77.47,
+          "p95us": 110.719,
+          "p99us": 136.77,
+          "maxus": 1603.885,
+          "misses": 0,
+          "server": {
+            "serverUs": 22.41283360000003,
+            "readsPerCall": 0.5352,
+            "hitsPerCall": 3.4648
+          }
+        }
+      },
+      {
+        "n": 2510000,
+        "bulk": {
+          "rows": 509000,
+          "seconds": 19.091355134,
+          "rowsPerSec": 26661,
+          "wal": {
+            "bytesPerRow": 1090.6027976424361,
+            "fpiPerRow": 0.12702357563850689,
+            "recordsPerRow": 4.168402750491159
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1801.264,
+          "p95us": 3230.03,
+          "p99us": 5619.574,
+          "maxus": 31978.078,
+          "server": {
+            "serverUs": 36.34006499999995,
+            "readsPerCall": 1.161,
+            "hitsPerCall": 6.925
+          },
+          "wal": {
+            "bytesPerRow": 529.704,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.017
+          }
+        },
+        "size": {
+          "tableBytes": 456998912,
+          "indexBytes": 291135488
+        },
+        "uniform": {
+          "qps": 9816,
+          "count": 5000,
+          "p50us": 92.879,
+          "p95us": 147.639,
+          "p99us": 219.71,
+          "maxus": 2376.933,
+          "misses": 0,
+          "server": {
+            "serverUs": 35.27194839999994,
+            "readsPerCall": 1.596,
+            "hitsPerCall": 2.404
+          }
+        },
+        "recent": {
+          "qps": 11842,
+          "count": 5000,
+          "p50us": 80.08,
+          "p95us": 117.019,
+          "p99us": 157.79,
+          "maxus": 1072.648,
+          "misses": 0,
+          "server": {
+            "serverUs": 23.372093400000068,
+            "readsPerCall": 0.6366,
+            "hitsPerCall": 3.3634
+          }
+        }
+      },
+      {
+        "n": 3160000,
+        "bulk": {
+          "rows": 649000,
+          "seconds": 23.591643592,
+          "rowsPerSec": 27510,
+          "wal": {
+            "bytesPerRow": 844.05418798151,
+            "fpiPerRow": 0.058298921417565486,
+            "recordsPerRow": 4.019476117103236
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1751.515,
+          "p95us": 3185.371,
+          "p99us": 5387.904,
+          "maxus": 7967.958,
+          "server": {
+            "serverUs": 36.88549499999998,
+            "readsPerCall": 1.31,
+            "hitsPerCall": 6.788
+          },
+          "wal": {
+            "bytesPerRow": 556.944,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.023
+          }
+        },
+        "size": {
+          "tableBytes": 575365120,
+          "indexBytes": 389472256
+        },
+        "uniform": {
+          "qps": 10801,
+          "count": 5000,
+          "p50us": 87.189,
+          "p95us": 121.729,
+          "p99us": 155.48,
+          "maxus": 4407.577,
+          "misses": 0,
+          "server": {
+            "serverUs": 30.217959000000008,
+            "readsPerCall": 1.6486,
+            "hitsPerCall": 2.3514
+          }
+        },
+        "recent": {
+          "qps": 12027,
+          "count": 5000,
+          "p50us": 79.11,
+          "p95us": 115.19,
+          "p99us": 150.489,
+          "maxus": 1841.514,
+          "misses": 0,
+          "server": {
+            "serverUs": 23.323900400000003,
+            "readsPerCall": 0.747,
+            "hitsPerCall": 3.253
+          }
+        }
+      },
+      {
+        "n": 3980000,
+        "bulk": {
+          "rows": 819000,
+          "seconds": 28.909680879,
+          "rowsPerSec": 28330,
+          "wal": {
+            "bytesPerRow": 1468.3211623931625,
+            "fpiPerRow": 0.1647094017094017,
+            "recordsPerRow": 4.130330891330892
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1751.615,
+          "p95us": 2735.943,
+          "p99us": 3205.31,
+          "maxus": 9051.285,
+          "server": {
+            "serverUs": 37.06787500000002,
+            "readsPerCall": 1.339,
+            "hitsPerCall": 7.723
+          },
+          "wal": {
+            "bytesPerRow": 475.672,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.003
+          }
+        },
+        "size": {
+          "tableBytes": 724672512,
+          "indexBytes": 533512192
+        },
+        "uniform": {
+          "qps": 11105,
+          "count": 5000,
+          "p50us": 85.63,
+          "p95us": 115.409,
+          "p99us": 137.27,
+          "maxus": 4013.148,
+          "misses": 0,
+          "server": {
+            "serverUs": 29.41349179999995,
+            "readsPerCall": 1.7242,
+            "hitsPerCall": 2.2758
+          }
+        },
+        "recent": {
+          "qps": 12550,
+          "count": 5000,
+          "p50us": 76.12,
+          "p95us": 105.179,
+          "p99us": 131.07,
+          "maxus": 1446.085,
+          "misses": 0,
+          "server": {
+            "serverUs": 22.08015600000002,
+            "readsPerCall": 0.8286,
+            "hitsPerCall": 3.1714
+          }
+        }
+      },
+      {
+        "n": 5010000,
+        "bulk": {
+          "rows": 1029000,
+          "seconds": 35.624851808,
+          "rowsPerSec": 28884,
+          "wal": {
+            "bytesPerRow": 1100.476501457726,
+            "fpiPerRow": 0.10750340136054422,
+            "recordsPerRow": 4.006737609329446
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1694.035,
+          "p95us": 2793.962,
+          "p99us": 5260.105,
+          "maxus": 6736.43,
+          "server": {
+            "serverUs": 33.985394,
+            "readsPerCall": 1.339,
+            "hitsPerCall": 7.729
+          },
+          "wal": {
+            "bytesPerRow": 40652.392,
+            "fpiPerRow": 0,
+            "recordsPerRow": 5.006
+          }
+        },
+        "size": {
+          "tableBytes": 912228352,
+          "indexBytes": 581795840
+        },
+        "uniform": {
+          "qps": 11261,
+          "count": 5000,
+          "p50us": 84.729,
+          "p95us": 114.649,
+          "p99us": 140.549,
+          "maxus": 1434.577,
+          "misses": 0,
+          "server": {
+            "serverUs": 28.514203000000055,
+            "readsPerCall": 1.7622,
+            "hitsPerCall": 2.2378
+          }
+        },
+        "recent": {
+          "qps": 11396,
+          "count": 5000,
+          "p50us": 82.339,
+          "p95us": 118.679,
+          "p99us": 154.24,
+          "maxus": 2286.564,
+          "misses": 0,
+          "server": {
+            "serverUs": 24.515331000000003,
+            "readsPerCall": 0.9286,
+            "hitsPerCall": 3.0714
+          }
+        }
+      },
+      {
+        "n": 6310000,
+        "bulk": {
+          "rows": 1299000,
+          "seconds": 48.495354415,
+          "rowsPerSec": 26786,
+          "wal": {
+            "bytesPerRow": 2546.2870577367207,
+            "fpiPerRow": 0.3348006158583526,
+            "recordsPerRow": 4.100949961508853
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 1751.375,
+          "p95us": 3168.85,
+          "p99us": 5916.233,
+          "maxus": 9763.082,
+          "server": {
+            "serverUs": 34.332953999999994,
+            "readsPerCall": 1.677,
+            "hitsPerCall": 7.425
+          },
+          "wal": {
+            "bytesPerRow": 562.064,
+            "fpiPerRow": 0.002,
+            "recordsPerRow": 5.023
+          }
+        },
+        "size": {
+          "tableBytes": 1148952576,
+          "indexBytes": 779124736
+        },
+        "uniform": {
+          "qps": 11780,
+          "count": 5000,
+          "p50us": 82.04,
+          "p95us": 100.869,
+          "p99us": 114.75,
+          "maxus": 2817.141,
+          "misses": 0,
+          "server": {
+            "serverUs": 27.627840199999987,
+            "readsPerCall": 1.8062,
+            "hitsPerCall": 2.1938
+          }
+        },
+        "recent": {
+          "qps": 12503,
+          "count": 5000,
+          "p50us": 77.37,
+          "p95us": 100.26,
+          "p99us": 127.21,
+          "maxus": 1773.215,
+          "misses": 0,
+          "server": {
+            "serverUs": 22.88678579999997,
+            "readsPerCall": 1.0302,
+            "hitsPerCall": 2.9698
+          }
+        }
+      },
+      {
+        "n": 7940000,
+        "bulk": {
+          "rows": 1629000,
+          "seconds": 79.899328568,
+          "rowsPerSec": 20388,
+          "wal": {
+            "bytesPerRow": 5879.982737875997,
+            "fpiPerRow": 0.9819907918968692,
+            "recordsPerRow": 4.131518723143032
+          }
+        },
+        "single": {
+          "count": 1000,
+          "p50us": 3432.091,
+          "p95us": 4419.947,
+          "p99us": 7702.997,
+          "maxus": 63872.936,
+          "server": {
+            "serverUs": 34.27215800000006,
+            "readsPerCall": 1.689,
+            "hitsPerCall": 7.367
+          },
+          "wal": {
+            "bytesPerRow": 9725.72,
+            "fpiPerRow": 1.683,
+            "recordsPerRow": 5.002
+          }
+        },
+        "size": {
+          "tableBytes": 1445773312,
+          "indexBytes": 1066524672
+        },
+        "uniform": {
+          "qps": 11510,
+          "count": 5000,
+          "p50us": 82.88,
+          "p95us": 106.47,
+          "p99us": 125.221,
+          "maxus": 2940.901,
+          "misses": 0,
+          "server": {
+            "serverUs": 27.981008600000095,
+            "readsPerCall": 1.851,
+            "hitsPerCall": 2.149
+          }
+        },
+        "recent": {
+          "qps": 12579,
+          "count": 5000,
+          "p50us": 76.92,
+          "p95us": 102.9,
+          "p99us": 119.43,
+          "maxus": 1707.805,
+          "misses": 0,
+          "server": {
+            "serverUs": 21.44127680000001,
+            "readsPerCall": 1.141,
+            "hitsPerCall": 2.859
+          }
+        }
+      }
+    ]
+  },
+  "startedAt": "2026-09-28T13:29:45.650Z",
+  "order": [
+    "snowflake",
+    "autoinc",
+    "ulid",
+    "uuidv4",
+    "cuid2",
+    "uuidv7",
+    "nanoid"
+  ]
+}
