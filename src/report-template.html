@@ -70,6 +70,13 @@ svg.chart text { fill: var(--text-muted); font-size: 11px; }
 .tip .r i { color: var(--text-secondary); font-style: normal; }
 details { margin: 6px 0 0; }
 summary { cursor: pointer; color: var(--text-secondary); font-size: 13px; }
+.hostcard { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin: 8px 0 16px; }
+.hostcard h2 { font-size: 15px; margin: 0 0 8px; }
+.hostcard table { margin: 0; }
+.hostcard th { text-align: left; color: var(--text-secondary); font-weight: 500; }
+.hostcard td { text-align: left; white-space: normal; }
+.hostcard .note { color: var(--text-secondary); font-size: 12px; margin: 8px 0 0; }
+.warn { border-left: 3px solid var(--s8); padding: 6px 10px; margin: 10px 0 0; font-size: 13px; background: var(--surface-0); border-radius: 4px; }
 .tablewrap { overflow-x: auto; }
 table { border-collapse: collapse; font-size: 12px; margin: 8px 0; font-variant-numeric: tabular-nums; }
 th, td { padding: 3px 10px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
@@ -81,6 +88,7 @@ th:first-child, td:first-child { text-align: left; }
 	<h1>ID 벤치마크 결과</h1>
 	<p class="sub" id="sub"></p>
 	<div class="filters"><label>DB <select id="db"></select></label><span class="env" id="env"></span></div>
+	<div id="host"></div>
 	<div id="gen"></div>
 	<div id="charts"></div>
 </main>
@@ -328,6 +336,41 @@ function render() {
 		root.append(det);
 	}
 }
+
+// The machine and Docker engine of the run (results/<RUN_ID>/host.json).
+function hostCard() {
+	const h = D.host;
+	const m = Object.values(D.meta)[0];
+	const gib = (b) => `${(b / 2 ** 30).toFixed(1)} GiB`;
+	const card = el('div', { class: 'hostcard' });
+	card.append(el('h2', {}, '측정 환경'));
+	const rows = [];
+	if (h) {
+		rows.push(['CPU', `${h.cpu} · ${h.cores}코어 ${h.threads}스레드 · L3 ${h.l3} · 최대 ${Math.round(Number(h.maxMHz))} MHz`]);
+		rows.push(['클럭 설정', `거버너 ${h.governor} · 부스트 ${h.boost === '1' ? '켜짐' : h.boost === '0' ? '꺼짐' : h.boost}`]);
+		rows.push(['메모리', gib(h.memoryBytes)]);
+		rows.push(['디스크', `${h.dockerDiskModel} (${h.dockerDisk}), Docker 데이터가 있는 디스크`]);
+		rows.push(['OS', `${h.os} · 커널 ${h.kernel}`]);
+		rows.push(['Docker', h.docker.desktopVm
+			? `Docker Desktop (VM: CPU ${h.docker.cpus}개, 메모리 ${gib(h.docker.memoryBytes)}) · ${h.docker.version}`
+			: `네이티브 Docker Engine ${h.docker.version} · cgroup ${h.docker.cgroupDriver}`]);
+		rows.push(['CPU 고정', `DB ${h.dbCpus} · 실행기 ${h.runnerCpus}`]);
+	}
+	rows.push(['DB', `${String(m.env.version).split(' ').slice(0, 2).join(' ')} · 설정 기본값 (캐시 ${m.env.cache}) · 메모리, 디스크 I/O 제한 없음`]);
+	const t = el('table');
+	for (const [k, v] of rows) { const tr = el('tr'); tr.append(el('th', {}, k), el('td', {}, v)); t.append(tr); }
+	card.append(t);
+	if (!h) card.append(el('p', { class: 'note' }, '이 실행에는 하드웨어 기록(host.json)이 없어요.'));
+	else if (h.recordedAfterRun) card.append(el('p', { class: 'note' }, `측정이 끝난 뒤 같은 PC에서 기록한 정보예요 (${h.recordedAt.slice(0, 10)}). 클럭 설정은 측정 당시와 다를 수 있어요.`));
+	if (h?.docker.desktopVm) {
+		card.append(el('p', { class: 'warn' },
+			'Docker Desktop(VM)에서 돌린 결과예요. CPU 고정은 VM의 가상 CPU에 걸리고, 커밋은 VM 디스크를 거쳐 더 느리고 들쭉날쭉해요. ' +
+			'"캐시를 비운 직후" 측정은 VM 안의 캐시만 비워서, 호스트가 캐시한 VM 디스크에서 읽혔을 수 있어요(실제 디스크 읽기보다 빠름). ' +
+			'ID끼리의 비교는 같은 조건이라 유효해요.'));
+	}
+	$('#host').append(card);
+}
+hostCard();
 
 function genTable() {
 	const g = D.generation;

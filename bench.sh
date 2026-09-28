@@ -20,6 +20,13 @@ run() { docker compose --profile runner run --rm -T runner "$@"; }
 log() { echo "$(date +%H:%M:%S) $*"; }
 
 log "run $RUN_ID: $DBS, reps $REPS"
+mkdir -p "results/$RUN_ID"
+scripts/host-info.sh > "results/$RUN_ID/host.json"
+# Docker Desktop resets the current context to its VM when it starts; CPU pinning and
+# cold-cache runs then act on the VM, not this machine. Say so loudly.
+if [[ $(docker info --format '{{.OperatingSystem}}') == "Docker Desktop" ]]; then
+  log "!! running on Docker Desktop (a VM). For the native engine: docker context use default"
+fi
 run npm ci --no-audit --no-fund --loglevel=error
 run node src/gen.js
 

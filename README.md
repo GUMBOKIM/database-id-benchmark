@@ -10,6 +10,7 @@ users 테이블의 PK로 썼을 때 **한 건 삽입 · ID 조회 · 용량**이
 
 호스트에는 **Docker만** 있으면 됩니다. Node.js와 라이브러리는 전부 컨테이너 안에서 돌아갑니다.
 CPU 고정과 I/O 제한이 실제 하드웨어에 걸리도록 **네이티브 Docker Engine**(`docker context use default`)에서 돌리세요.
+Docker Desktop은 켜질 때 현재 컨텍스트를 자기 VM으로 되돌려요. 그래서 실행 전에 `docker context show`가 `default`인지 확인하세요. Docker Desktop이면 `bench.sh`가 시작할 때 경고를 띄워요.
 기본값은 개발 PC(Ryzen 9 7950X, `/dev/nvme1n1`)에 맞춰져 있어요. 다른 PC에서는 `DB_CPUS`, `RUNNER_CPUS`를 바꿔 주세요.
 
 ```bash
@@ -27,6 +28,7 @@ sudo scripts/host-prep.sh off       # 원래대로
 - `<db>.r<반복>.json`: 원본 측정값. 측정 지점마다 저장되므로, 도중에 멈춰도 그때까지의 결과는 남습니다.
 - `report.html`: DB별 그래프. x축은 행 수(log)이고, 반복했다면 중앙값 선과 최소~최대 띠로 그려요.
 - `summary.csv`: DB × 반복 × ID × 측정 지점마다 한 줄입니다.
+- `host.json`: 측정한 PC의 CPU, 메모리, 디스크, OS와 **실제로 쓴 Docker 엔진**(네이티브 / Docker Desktop VM). 리포트 맨 위 "측정 환경" 표로 보여요.
 
 ### 설정 (환경 변수)
 
@@ -140,6 +142,7 @@ ID 종류는 반복마다 다른 순서로 측정해요(반복 번호로 시드)
 bench.sh                  전체 실행 (ID 생성 → DB 하나씩 × 반복 → 리포트)
 docker-compose.yml        DB와 실행기 컨테이너 (버전, CPU 고정)
 scripts/host-prep.sh      호스트 클럭 고정, 페이지 캐시 비우기 (sudo)
+scripts/host-info.sh      측정 환경을 JSON으로 기록 (bench.sh가 host.json으로 저장)
 src/ids.js                ID 생성기
 src/gen.js                ID를 미리 만들어 cache/에 저장
 src/config.js             환경 변수 설정, 측정 지점 계산

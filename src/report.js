@@ -2,7 +2,7 @@
 // Reads every <db>.r<rep>.json in the run folder and writes
 //   summary.csv  - one row per db × type × rep × checkpoint
 //   report.html  - log10(N) charts per db, median over repetitions (band = min..max)
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { ID_TYPES } from './ids.js';
 
 const dir = process.argv[2] ?? `results/${readdirSync('results').filter((d) => !d.startsWith('_')).sort().at(-1)}`;
@@ -119,7 +119,8 @@ writeFileSync(`${dir}/summary.csv`, csv.join('\n') + '\n');
 // ---------------------------------------------------------------- html
 
 const TYPES = Object.fromEntries(Object.entries(ID_TYPES).map(([k, v]) => [k, { label: v.label, sorted: v.sorted, kind: v.kind }]));
-const payload = { run: dir.split('/').at(-1), metrics: METRICS.map(({ get, ...m }) => m), data, meta, types: TYPES, generation: runs[0].generation ?? {} };
+const host = existsSync(`${dir}/host.json`) ? JSON.parse(readFileSync(`${dir}/host.json`, 'utf8')) : null;
+const payload = { run: dir.split('/').at(-1), metrics: METRICS.map(({ get, ...m }) => m), data, meta, types: TYPES, generation: runs[0].generation ?? {}, host };
 const html = readFileSync(new URL('./report-template.html', import.meta.url), 'utf8')
 	.replace('/*__DATA__*/null', JSON.stringify(payload).replace(/</g, '\\u003c'));
 writeFileSync(`${dir}/report.html`, html);

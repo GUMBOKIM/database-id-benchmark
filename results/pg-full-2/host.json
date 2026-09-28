@@ -1,0 +1,27 @@
+{
+  "recordedAt": "2026-09-28T15:05:43Z",
+  "recordedAfterRun": true,
+  "cpu": "AMD Ryzen 9 7950X 16-Core Processor",
+  "cores": 16,
+  "threads": 32,
+  "l3": "64 MiB (2 instances)",
+  "maxMHz": "4501.0000",
+  "governor": "powersave",
+  "boost": "1",
+  "memoryBytes": 65917583360,
+  "os": "Ubuntu 26.04.1 LTS",
+  "kernel": "7.0.0-31-generic",
+  "dockerDisk": "nvme1n1",
+  "dockerDiskModel": "Samsung SSD 990 PRO 2TB",
+  "docker": {
+    "context": "desktop-linux",
+    "engine": "Docker Desktop",
+    "desktopVm": true,
+    "version": "29.8.0",
+    "cpus": 32,
+    "memoryBytes": 42050719744,
+    "cgroupDriver": "cgroupfs"
+  },
+  "dbCpus": "0-7,16-23",
+  "runnerCpus": "8-15,24-31"
+}
