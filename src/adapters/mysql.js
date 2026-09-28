@@ -96,6 +96,15 @@ function make({ name, nativeUuid }) {
 				return { serverUs: (after.ps - before.ps) / 1e6 / calls, readsPerCall: ((await diskReads()) - before.reads) / calls };
 			},
 
+			// Redo log bytes written (InnoDB's WAL). There is no full-page-image count.
+			async wal() {
+				const [r] = await q(`show global status like 'Innodb_os_log_written'`);
+				return { bytes: Number(r.Value), fpi: null, records: null };
+			},
+			indexStats: async () => null,
+			// No cheap way to empty the buffer pool without a restart: cold runs are skipped.
+			evict: null,
+
 			drop: (table) => q(`drop table if exists ${table}`),
 			close: () => conn.end(),
 		};

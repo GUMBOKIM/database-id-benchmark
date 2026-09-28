@@ -50,10 +50,12 @@ services:
       interval: 1s
       retries: 180
 
-  # Runs gen.js / bench.js / report.js.
+  # Runs gen.js / bench.js / report.js. Privileged so bench.js can drop the OS page
+  # cache (/proc/sys/vm/drop_caches) for the cold-cache runs; that is host-wide.
   runner:
     image: node:24-slim@sha256:0e0ff40c39bc087845bfb27465a0df4ea419520094bc35842ff83dd8cbe6f9b6
     cpuset: ${RUNNER_CPUS:-8-15,24-31}
+    privileged: true
     mem_limit: 4g
     profiles: [runner]
     working_dir: /app
@@ -73,6 +75,12 @@ services:
       - READ_WARMUP
       - RECENT_FRAC
       - RECENT_SHARE
+      - COLD_W
+      - COLD_READ_N
+      - CONC_WORKERS
+      - CONC_ROWS
+      - CONC_MIN_N
+      - SIM_DAYS
 
 volumes:
   node_modules:

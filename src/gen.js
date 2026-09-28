@@ -5,7 +5,7 @@
 import { spawn } from 'node:child_process';
 import { createWriteStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { ID_TYPES } from './ids.js';
-import { TYPES, N_MAX } from './config.js';
+import { TYPES, N_MAX, SIM_CLOCK_TAG as clockTag, simClock } from './config.js';
 
 mkdirSync('cache', { recursive: true });
 if (TYPES.length > 1) {
@@ -17,20 +17,25 @@ if (TYPES.length > 1) {
 const metaFile = 'cache/meta.json';
 const meta = existsSync(metaFile) ? JSON.parse(readFileSync(metaFile, 'utf8')) : {};
 
+// Sign-up time of row i comes from simClock() (config.js): N_MAX users over SIM_DAYS days
+// with exponential gaps, from a fixed seed, so row i gets the same time in every type.
+
 for (const type of TYPES) {
 	const spec = ID_TYPES[type];
 	if (spec.kind === 'db') continue;
 	const n = N_MAX;
 	const file = `cache/${type}.txt`;
-	if (existsSync(file) && meta[type]?.n >= n && statSync(file).size > 0) {
+	const clockOk = !spec.timed || meta[type]?.clock === clockTag;
+	if (existsSync(file) && meta[type]?.n >= n && clockOk && statSync(file).size > 0) {
 		console.log(`cached  ${type} (${meta[type].n})`);
 		continue;
 	}
+	const now = simClock();
 	const out = createWriteStream(file);
 	const t0 = process.hrtime.bigint();
 	let buf = [];
 	for (let i = 0; i < n; i++) {
-		buf.push(spec.gen(i));
+		buf.push(spec.gen(i, now()));
 		if (buf.length === 100_000) {
 			if (!out.write(buf.join('\n') + '\n')) await new Promise((r) => out.once('drain', r));
 			buf = [];
@@ -41,7 +46,7 @@ for (const type of TYPES) {
 	// Includes the (small) cost of writing the file; good enough to compare generators.
 	const nsPerId = Number(process.hrtime.bigint() - t0) / n;
 	const latest = existsSync(metaFile) ? JSON.parse(readFileSync(metaFile, 'utf8')) : {};
-	latest[type] = { n, nsPerId };
+	latest[type] = { n, nsPerId, ...(spec.timed ? { clock: clockTag } : {}) };
 	writeFileSync(metaFile, JSON.stringify(latest, null, 2));
 	console.log(`generated ${type}: ${n} ids, ${nsPerId.toFixed(0)} ns/id`);
 }

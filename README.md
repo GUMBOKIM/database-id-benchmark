@@ -1,6 +1,6 @@
 # database-id-benchmark
 
-자동 생성 ID(auto increment, Snowflake, UUID v1/v4/v6/v7, ULID, ObjectId, TypeID, NanoID, CUID2 등)를
+많이 쓰는 자동 생성 ID 7종(auto increment, Snowflake, UUID v4, UUID v7, ULID, NanoID, CUID2)을
 users 테이블의 PK로 썼을 때 **한 건 삽입 · ID 조회 · 용량**이 어떻게 달라지는지 재는 벤치마크입니다.
 
 **같은 DB 안에서 ID끼리 비교**하는 용도예요. DB끼리 빠르기를 비교하는 벤치마크가 아니에요.
@@ -15,8 +15,8 @@ CPU 고정과 I/O 제한이 실제 하드웨어에 걸리도록 **네이티브 D
 ```bash
 sudo scripts/host-prep.sh on        # (선택) 클럭 고정, 페이지 캐시 비우기
 N_MAX=10000 ./bench.sh              # 동작 확인, 몇 분
-./bench.sh                          # 본 측정, PostgreSQL 약 1.5~2시간
-RUN_ID=<위 실행> REPS="2 3" TYPES=autoinc,uuidv4,uuidv7,uuidv4_str,ulid,nanoid ./bench.sh
+REPS="1 2 3" ./bench.sh             # 본 측정 3회, PostgreSQL 회차당 약 1시간 10분
+RUN_ID=<위 실행> REPS="4" ./bench.sh # 같은 실행에 반복 측정 추가
                                     # 같은 실행에 반복 측정 추가
 DBS="postgres mysql" ./bench.sh     # MySQL도 함께
 sudo scripts/host-prep.sh off       # 원래대로
@@ -34,12 +34,15 @@ sudo scripts/host-prep.sh off       # 원래대로
 | --- | --- | --- |
 | `DBS` | `postgres` | `postgres mysql mariadb` |
 | `REPS` | `1` | 반복 번호 목록. `"1 2 3"`이면 세 번, 매번 새 컨테이너 |
-| `TYPES` | 12종 | 쉼표로 구분, `src/ids.js`의 키 |
+| `TYPES` | 7종 | 쉼표로 구분, `src/ids.js`의 키. uuidv1, uuidv6, uuidv4_str, typeid 등도 있어요 |
 | `N_MIN` / `N_MAX` | `1000` / `10000000` | 측정 지점 범위 |
 | `POINTS_PER_DECADE` | `10` | 10배 구간마다 측정 지점 수 (log 간격) |
 | `SINGLE_W` | `1000` | 측정 지점마다 한 건씩 넣으며 재는 행 수 |
 | `READ_N` / `READ_WARMUP` | `5000` / `500` | 조회 패턴마다 조회 수 / 워밍업 |
 | `RECENT_FRAC` / `RECENT_SHARE` | `0.1` / `0.9` | 최근 편중 조회: 90%를 최근 10% 행에서 |
+| `COLD_W` / `COLD_READ_N` | `200` / `1000` | 캐시를 비운 직후 한 건 삽입 수 / 조회 패턴마다 조회 수 |
+| `CONC_WORKERS` / `CONC_ROWS` / `CONC_MIN_N` | `16` / `8000` / `100000` | 동시 삽입 연결 수 / 행 수 / 시작 지점. `CONC_WORKERS=0`이면 건너뜀 |
+| `SIM_DAYS` | `365` | 시간 기반 ID의 가입 시각을 퍼뜨리는 기간 |
 | `DB_CPUS` / `RUNNER_CPUS` | `0-7,16-23` / `8-15,24-31` | CPU 고정. 7950X의 CCD 두 개에 나눠서 L3 캐시도 따로 써요 |
 | `BATCH` | `1000` | 측정 지점 사이를 채울 때 INSERT 한 번에 넣는 행 수 |
 
@@ -68,11 +71,12 @@ updated_at    timestamp     default now()
 | --- | --- | --- | --- |
 | auto increment | `bigint identity` | `bigint auto_increment` | ✅ |
 | Snowflake | `bigint` | `bigint` | ✅ |
-| UUID v6, v7 | `uuid` | `binary(16)` | ✅ |
-| UUID v1 | `uuid` | `binary(16)` | ❌ 시간 기반이지만 바이트 순서는 정렬되지 않아요 |
+| UUID v7 | `uuid` | `binary(16)` | ✅ |
 | UUID v4 | `uuid` | `binary(16)` | ❌ |
-| ULID (monotonic), ObjectId, TypeID | `varchar(n)` | `varchar(n)` | ✅ |
-| UUID v4 (varchar), NanoID, CUID2 | `varchar(n)` | `varchar(n)` | ❌ |
+| ULID (monotonic) | `varchar(26)` | `varchar(26)` | ✅ |
+| NanoID, CUID2 | `varchar(21)`, `varchar(24)` | 〃 | ❌ |
+
+`TYPES`로 고를 수 있는 나머지(UUID v1/v6, UUID v4 varchar, TypeID 등)도 같은 규칙이에요. UUID v1은 시간 기반이지만 시간의 하위 비트가 앞에 와서 바이트 순서로는 정렬되지 않아요.
 
 ### 측정 방식
 
@@ -84,6 +88,14 @@ updated_at    timestamp     default now()
 3. **용량**: 테이블과 인덱스를 나눠서 재요 (PostgreSQL `pg_table_size` / `pg_indexes_size`, MySQL은 `ANALYZE TABLE` 후 `data_length` / `index_length`).
 4. **ID 조회, 균등**: 0~N 중에서 무작위로 골라 `SELECT * WHERE id = ?`를 `READ_N`번 해요.
 5. **ID 조회, 최근 편중**: 조회의 90%는 최근 10% 행에서 골라요. 정렬되는 ID는 최근 행이 인덱스 끝에 모여 캐시에 남지만, 랜덤 ID는 흩어져 있어요.
+
+1과 2에서는 **WAL 양**(행당 바이트, 전체 페이지 기록 FPI 수)도 기록해요. 랜덤 ID는 체크포인트 뒤 매번 다른 인덱스 페이지를 처음 건드려서 FPI가 많이 생겨요.
+
+**10배 지점**(1천, 1만, …, 1천만)에서는 다음을 더 재요.
+
+- **동시 삽입** (10만 건 이상): 16개 연결이 한 건씩 동시에 8,000건을 넣어요. 정렬되는 ID는 인덱스 맨 끝 페이지에 삽입이 몰려서 경합이 생길 수 있어요.
+- **캐시를 비운 직후**: `pg_buffercache_evict_all()`로 PostgreSQL 버퍼를, `/proc/sys/vm/drop_caches`로 OS 페이지 캐시를 비운 뒤 한 건 삽입 200번을 재요. 조회도 패턴마다 캐시를 다시 비우고 워밍업 없이 1,000번 재요. 끝나면 `pg_prewarm`으로 테이블과 인덱스를 OS 캐시에 다시 읽어 들여서, 다음 측정 지점이 영향을 받지 않게 해요.
+- **PK 인덱스 상태**: `pgstatindex()`로 리프 페이지 평균 채움률과 단편화를 재요.
 
 조회는 클라이언트 지연(p50/p95/p99)과 함께 DB가 기록한 값도 남겨요.
 
@@ -108,6 +120,9 @@ updated_at    timestamp     default now()
 메모리가 데이터보다 넉넉한 서버와 같은 상황이에요. 조회 그래프의 "캐시 밖 읽기"는 DB 버퍼 밖에서 읽은 블록 수예요.
 
 ID는 `src/gen.js`가 **미리 한 번만** 만들어 `cache/`에 저장해요. 모든 DB와 반복에 같은 ID가 들어가고, 삽입 시간에 ID 생성 비용은 포함되지 않아요.
+시간 기반 ID(Snowflake, UUID v7, ULID 등)는 실제 가입처럼 **1천만 명이 1년에 걸쳐 가입한 시각**(고정 시드, 지수 분포 간격)을 넣어 만들어요. 몰아서 만들면 시간값이 몇 초 안에 모여서 실제와 다르게 동작하기 때문이에요 (예: UUID v1이 정렬된 것처럼 보임).
+
+ID 종류는 반복마다 다른 순서로 측정해요(반복 번호로 시드). 측정 시각에 따라 디스크의 커밋 속도가 변해서, 순서가 같으면 뒤쪽 ID만 불리해지기 때문이에요.
 
 ## 한계
 
@@ -115,8 +130,9 @@ ID는 `src/gen.js`가 **미리 한 번만** 만들어 `cache/`에 저장해요. 
 - 한 건 삽입 지연의 대부분은 커밋(WAL 기록) 시간이에요. 그래서 커밋을 뺀 **서버 실행 시간**도 따로 기록해요. ID 차이는 주로 여기서 보여요.
 - DB마다 시작 전후로 같은 CPU 계산을 3초 돌려서, 측정 중에 CPU 속도가 변하지 않았는지 봐요.
 - 데이터가 메모리보다 커서 디스크를 읽어야 하는 상황은 재지 않아요. 그런 서버라면 랜덤 ID의 손해가 이 결과보다 커요.
-- ID를 짧은 시간에 몰아서 만들기 때문에 시간 기반 ID의 시간 값이 실제 서비스보다 촘촘해요. ULID는 이 때문에 순서가 깨지지 않도록 monotonic 방식으로 만들어요.
-- 조회와 삽입은 연결 하나에서 순서대로 해요. 여러 요청이 동시에 몰릴 때의 경합은 재지 않아요.
+- 캐시를 비운 측정은 로컬 NVMe에서 읽어요. RDS의 EBS는 읽기 한 번이 더 느려서, 실제 차이는 이 결과보다 커요.
+- 실행기 컨테이너는 OS 캐시를 비우려고 `privileged`로 떠요. OS 캐시 비우기는 PC 전체에 적용돼요.
+- 동시 삽입 말고는 연결 하나에서 순서대로 해요.
 
 ## 파일 구성
 

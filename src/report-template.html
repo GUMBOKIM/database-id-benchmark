@@ -42,11 +42,16 @@ body { margin: 0; background: var(--surface-0); color: var(--text-primary); font
 main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 64px; }
 h1 { font-size: 22px; margin: 0 0 4px; }
 h2 { font-size: 16px; margin: 32px 0 8px; }
+h2.group { font-size: 19px; margin: 48px 0 4px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+h3.metric { font-size: 15px; margin: 24px 0 8px; }
 .sub { color: var(--text-secondary); margin: 0 0 16px; }
 .filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 16px 0; }
 select { font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-1); color: var(--text-primary); }
 .env { color: var(--text-secondary); font-size: 13px; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row.single { grid-template-columns: 1fr; }
+.legend .grp { color: var(--text-muted); font-weight: 600; margin-left: 4px; }
+.legend .grp:first-child { margin-left: 0; }
 @media (max-width: 800px) { .row { grid-template-columns: 1fr; } }
 .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 12px 12px 4px; position: relative; min-width: 0; }
 .card h3 { font-size: 13px; font-weight: 600; margin: 0 0 6px; color: var(--text-secondary); }
@@ -85,6 +90,16 @@ const D = /*__DATA__*/null;
 // Fixed slot per ID so a color always means the same ID, whatever is in the run.
 const SORTED = ['snowflake', 'uuidv7', 'uuidv6', 'ulid', 'objectid', 'typeid', 'ksuid', 'xid'];
 const RANDOM = ['uuidv4', 'uuidv4_str', 'uuidv1', 'nanoid', 'cuid2', 'uuidv3', 'uuidv5', 'cuid'];
+// Up to 8 IDs (besides auto increment) fit one chart: every ID on the same axes, sorted
+// ones as solid lines and random ones dashed. More than that (an older 12-type run) and
+// the palette runs out, so sorted and random get a chart each.
+const COMBINED = ['snowflake', 'uuidv7', 'ulid', 'uuidv4', 'nanoid', 'cuid2', 'uuidv6', 'typeid'];
+const RANDOM_DASH = '6 4';
+function panelsFor(byType) {
+	const present = Object.keys(byType).filter((id) => id !== REF);
+	if (present.every((id) => COMBINED.includes(id))) return [{ title: null, ids: COMBINED, combined: true }];
+	return PANELS;
+}
 const PANELS = [
 	{ title: '정렬되는 ID', ids: SORTED },
 	{ title: '랜덤 ID', ids: RANDOM },
@@ -126,7 +141,7 @@ function niceLinTicks(lo, hi) {
 }
 
 function chart(card, metric, raw, panel) {
-	const W = 560, H = 250, L = 52, R = 12, T = 8, B = 30;
+	const W = panel.combined ? 1100 : 560, H = panel.combined ? 300 : 250, L = 52, R = 12, T = 8, B = 30;
 	const all = raw.flatMap((s) => s.pts);
 	if (!all.length) { card.append(el('p', { class: 'env' }, '데이터 없음')); return; }
 	const xs = [...new Set(all.map((p) => p.n))].sort((a, b) => a - b);
@@ -146,13 +161,16 @@ function chart(card, metric, raw, panel) {
 	}
 	const series = mergeSame(raw, Y);
 	const legend = el('div', { class: 'legend' });
+	let lastKind = null;
 	for (const s of series) {
+		const kind = s.ref ? null : D.types[s.id].sorted ? '정렬' : '랜덤';
+		if (panel.combined && kind && kind !== lastKind) { legend.append(el('span', { class: 'grp' }, `${kind}:`)); lastKind = kind; }
 		const key = svgEl('svg', { width: 16, height: 4 });
-		key.append(svgEl('line', { x1: 0, x2: 16, y1: 2, y2: 2, stroke: s.color, 'stroke-width': 2, ...(s.ref ? { 'stroke-dasharray': '4 2' } : {}) }));
+		key.append(svgEl('line', { x1: 0, x2: 16, y1: 2, y2: 2, stroke: s.color, 'stroke-width': 2, ...(s.dash ? { 'stroke-dasharray': s.dash } : {}) }));
 		const item = el('span', { 'data-key': s.key }); item.append(key, document.createTextNode(s.label)); legend.append(item);
 	}
 	card.append(legend);
-	const svg = svgEl('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': `${metric.title}, ${panel.title}` });
+	const svg = svgEl('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': panel.title ? `${metric.title}, ${panel.title}` : metric.title });
 	for (const t of ticks) {
 		svg.append(svgEl('line', { x1: L, x2: W - R, y1: Y(t), y2: Y(t), stroke: 'var(--grid)', 'stroke-width': 1 }));
 		const tx = svgEl('text', { x: L - 6, y: Y(t) + 4, 'text-anchor': 'end' }); tx.textContent = fmtV(t); svg.append(tx);
@@ -172,7 +190,7 @@ function chart(card, metric, raw, panel) {
 		svg.append(svgEl('polyline', {
 			class: 'line', 'data-key': s.key,
 			points: s.pts.map((p) => `${X(p.n)},${Y(p.med)}`).join(' '), fill: 'none', stroke: s.color,
-			'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', ...(s.ref ? { 'stroke-dasharray': '5 4' } : {}),
+			'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', ...(s.dash ? { 'stroke-dasharray': s.dash } : {}),
 		}));
 	}
 
@@ -204,12 +222,12 @@ function chart(card, metric, raw, panel) {
 		if (size) head.textContent += ` · autoinc 테이블+인덱스 ${(size.med * n / 2 ** 20).toFixed(0)} MiB`;
 		tip.append(head);
 		for (const s of series) { const p = s.pts.find((q) => q.n === n); if (p) dots.append(svgEl('circle', { cx: X(n), cy: Y(p.med), r: 4, fill: s.color, stroke: 'var(--surface-1)', 'stroke-width': 2 })); }
-		const rows = series.flatMap((g) => g.members.map((s) => ({ s: { ...s, color: g.color, ref: g.ref }, p: s.pts.find((p) => p.n === n) })))
+		const rows = series.flatMap((g) => g.members.map((s) => ({ s: { ...s, color: g.color, ref: g.ref, dash: g.dash }, p: s.pts.find((p) => p.n === n) })))
 			.filter((r) => r.p).sort((a, b) => b.p.med - a.p.med);
 		for (const { s, p } of rows) {
 			const r = el('div', { class: 'r' });
 			const key = svgEl('svg', { width: 14, height: 4 });
-			key.append(svgEl('line', { x1: 0, x2: 14, y1: 2, y2: 2, stroke: s.color, 'stroke-width': 2, ...(s.ref ? { 'stroke-dasharray': '4 2' } : {}) }));
+			key.append(svgEl('line', { x1: 0, x2: 14, y1: 2, y2: 2, stroke: s.color, 'stroke-width': 2, ...(s.dash ? { 'stroke-dasharray': s.dash } : {}) }));
 			r.append(key, el('b', {}, fmtV(p.med, metric.unit)), el('i', {}, s.label + (p.reps > 1 ? ` (${fmtV(p.min)}–${fmtV(p.max)})` : '')));
 			tip.append(r);
 		}
@@ -286,19 +304,23 @@ function render() {
 	$('#env').textContent = `${String(m.env.version).split(' ').slice(0, 2).join(' ')} · 캐시 ${m.env.cache} · 반복 ${m.reps.length}회`;
 	const root = $('#charts');
 	root.replaceChildren();
+	let lastGroup = null;
 	for (const metric of D.metrics) {
 		const byType = D.data[db][metric.key];
 		if (!Object.keys(byType).length) continue;
-		root.append(el('h2', {}, metric.title));
-		const row = el('div', { class: 'row' });
+		if (metric.group !== lastGroup) { root.append(el('h2', { class: 'group' }, metric.group)); lastGroup = metric.group; }
+		root.append(el('h3', { class: 'metric' }, metric.title));
+		const panels = panelsFor(byType);
+		const row = el('div', { class: panels.length === 1 ? 'row single' : 'row' });
 		root.append(row);
-		for (const panel of PANELS) {
-			const ids = panel.ids.filter((id) => byType[id]);
+		for (const panel of panels) {
+			// Combined chart: sorted IDs first, then random; random ones dashed.
+			const ids = panel.ids.filter((id) => byType[id]).sort((a, b) => (panel.combined ? D.types[b].sorted - D.types[a].sorted : 0));
 			if (!ids.length) continue;
-			const raw = ids.map((id) => ({ id, label: D.types[id].label, color: color(panel, id), pts: byType[id] }));
-			if (byType[REF]) raw.unshift({ id: REF, label: `${D.types[REF].label} (기준)`, color: 'var(--ref)', pts: byType[REF], ref: true });
+			const raw = ids.map((id) => ({ id, label: D.types[id].label, color: color(panel, id), pts: byType[id], dash: panel.combined && !D.types[id].sorted ? RANDOM_DASH : null }));
+			if (byType[REF]) raw.unshift({ id: REF, label: `${D.types[REF].label} (기준)`, color: 'var(--ref)', pts: byType[REF], ref: true, dash: panel.combined ? null : '5 4' });
 			const card = el('div', { class: 'card' });
-			card.append(el('h3', {}, panel.title));
+			if (panel.title) card.append(el('h3', {}, panel.title));
 			row.append(card);
 			chart(card, metric, raw, panel);
 		}
